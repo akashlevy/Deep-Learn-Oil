@@ -35,21 +35,23 @@ for filename in os.listdir(os.getcwd()):
 	        data[name][1].append(oil)
 
 for name in data:
+	# Get data from dictionary
 	dates = data[name][0]
 	oils = data[name][1]
 	
 	# Create a figure and add a subplot with labels
 	fig = plt.figure(1)
 	graph = fig.add_subplot(111)
-	fig.suptitle(name)
-	plt.xlabel('Date')
-	plt.ylabel('Production')
+	fig.suptitle(name, fontsize=20)
+	plt.xlabel('Date', fontsize=15)
+	plt.ylabel('Production', fontsize=15)
 	
-	# Set the xtick locations to correspond to just the dates you entered.
-	graph.set_xticks(data[name][0][0::12])
+	# Set the xtick locations to correspond to the dates every 12 months
+	graph.set_xticks(dates[0::12])
 	 
-	# Set the xtick labels to correspond to just the dates you entered.
-	graph.set_xticklabels([num2date(date).strftime("%m/%y") for date in data[name][0][0::12]])
+	# Set the xtick labels to correspond to the dates every 12 months
+	date_labels = [num2date(date).strftime("%m/%y") for date in dates[0::12]]
+	graph.set_xticklabels(date_labels)
 	
 	# Remove zeroed data points
 	i = 0
@@ -59,8 +61,7 @@ for name in data:
 			del oils[i]
 		else:
 			i += 1
-	
+ 	
 	# Plot the data as a red line with round markers
 	graph.plot(dates, oils, "r-o")
-	
 	plt.show()
