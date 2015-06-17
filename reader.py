@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from matplotlib import pyplot as plt
 from matplotlib.dates import date2num, num2date
+from smooth import smooth
 
 # Data is contained in this dictionary
 # Keys are the oil well names
@@ -42,7 +43,7 @@ for name in data:
 	# Create a figure and add a subplot with labels
 	fig = plt.figure(1)
 	graph = fig.add_subplot(111)
-	fig.suptitle(name, fontsize=20)
+	fig.suptitle(name, fontsize=25)
 	plt.xlabel('Date', fontsize=15)
 	plt.ylabel('Production', fontsize=15)
 	
@@ -61,7 +62,22 @@ for name in data:
 			del oils[i]
 		else:
 			i += 1
- 	
+			
+	# Convert to arrays
+	dates = np.array(dates)
+	oils = np.array(oils)
+	
 	# Plot the data as a red line with round markers
 	graph.plot(dates, oils, "r-o")
+	
+	# Perform smoothing (ASSUMES POINTS ARE SPACED EVENLY & ENDPOINTS ARE BAD)
+	WINDOW_LEN = 5
+	if len(oils) > WINDOW_LEN:
+		oils = np.convolve(np.ones(WINDOW_LEN)/WINDOW_LEN, oils, mode='same')
+	
+	print len(dates)
+	print len(oils)
+ 	
+	# Plot the data as a green line with round markers
+	graph.plot(dates, oils, "g-o")
 	plt.show()
