@@ -44,8 +44,8 @@ for name in data:
 	fig = plt.figure(1)
 	graph = fig.add_subplot(111)
 	fig.suptitle(name, fontsize=25)
-	plt.xlabel('Date', fontsize=15)
-	plt.ylabel('Production', fontsize=15)
+	plt.xlabel("Date", fontsize=15)
+	plt.ylabel("Production", fontsize=15)
 	
 	# Set the xtick locations to correspond to the dates every 12 months
 	graph.set_xticks(dates[0::12])
@@ -63,21 +63,22 @@ for name in data:
 		else:
 			i += 1
 			
-	# Convert to arrays
+	# Convert data to numpy arrays
 	dates = np.array(dates)
 	oils = np.array(oils)
 	
-	# Plot the data as a red line with round markers
-	graph.plot(dates, oils, "r-o")
+	# Plot the raw data as a red line with round markers
+	graph.plot(dates, oils, "r-o", label="Oil Production")
 	
-	# Perform smoothing (ASSUMES POINTS ARE SPACED EVENLY & ENDPOINTS ARE BAD)
-	WINDOW_LEN = 5
+	# Performs convolutional smoothing (BAD: ASSUMES POINTS ARE SPACED EVENLY)
+	WINDOW_LEN = 6
 	if len(oils) > WINDOW_LEN:
-		oils = np.convolve(np.ones(WINDOW_LEN)/WINDOW_LEN, oils, mode='same')
-	
-	print len(dates)
-	print len(oils)
+		s = np.r_[oils[WINDOW_LEN/2:0:-1], oils, oils[-1:-WINDOW_LEN/2:-1]]
+		oils = np.convolve(np.ones(WINDOW_LEN)/WINDOW_LEN, s, mode="valid")
  	
-	# Plot the data as a green line with round markers
-	graph.plot(dates, oils, "g-o")
+	# Plot the smoothed data as a green line with round markers
+	graph.plot(dates, oils, "g-o", label="Smoothed Oil Production")
+	plt.legend()
+	mng = plt.get_current_fig_manager()
+	mng.resize(*mng.window.maxsize())
 	plt.show()
