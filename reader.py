@@ -2,9 +2,7 @@ import csv
 import numpy as np
 import os
 from datetime import datetime
-from matplotlib import pyplot as plt
 from matplotlib.dates import date2num, num2date
-from smooth import smooth
 
 # Data is contained in this dictionary
 # Keys are the oil well names
@@ -78,6 +76,8 @@ for name in data:
  	
 	# Plot the smoothed data as a green line with round markers
 	graph.plot(dates, oils, "g-o", label="Smoothed Oil Production")
+	
+	# Add legend, resize windows for Tkinter and display plot
 	plt.legend()
 	mng = plt.get_current_fig_manager()
 	mng.resize(*mng.window.maxsize())
