@@ -52,7 +52,7 @@ for name in data:
 	# Set the xtick labels to correspond to the dates every 12 months
 	date_labels = [num2date(date).strftime("%m/%y") for date in dates[0::12]]
 	graph.set_xticklabels(date_labels)
-	
+	'''
 	# Remove zeroed data points
 	i = 0
 	while i < len(oils):
@@ -61,7 +61,7 @@ for name in data:
 			del oils[i]
 		else:
 			i += 1
-			
+	'''		
 	# Convert data to numpy arrays
 	dates = np.array(dates)
 	oils = np.array(oils)
