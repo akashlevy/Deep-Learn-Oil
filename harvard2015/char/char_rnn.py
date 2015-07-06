@@ -25,6 +25,10 @@ plt.ion()
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
+def load_text(dataset):
+    filename = open(dataset, "r")
+    
+
 class RNN(object):
     """
     Recurrent neural network class

@@ -1,85 +1,175 @@
+"""Provides methods for obtaining, viewing, splitting oil production data"""
 import csv
+import cPickle
+import gzip
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from datetime import datetime
-from matplotlib.dates import date2num, num2date
+import random as rnd
 
-# Data is contained in this dictionary
-# Keys are the oil well names
-# Values are lists containing two lists that contain the dates/oil measurements
-data = {}
+# Parameters for reader
+DATA_DIRECTORY = "data"
 
-# Data files are located in data directory
-os.chdir("data")
+# Splitting data
+IN_MONTHS = 36
+OUT_MONTHS = 12
+MIN_MONTHS = IN_MONTHS + OUT_MONTHS
+STEP_MONTHS = 24
 
-for filename in os.listdir(os.getcwd()):
-	with open(filename, "rb") as csvfile:
-		# Open each data file with csv reader
-	    reader = csv.reader(csvfile, dialect="excel")
-	    
-	    # Ignore the first line because it contains headers
-	    reader.next()
-	    
-	    # Add each row to the current oil well
-	    for row in reader:
-	    	# Get data from cells and convert appropriately
-	    	date = date2num(datetime.strptime(row[0],"%m/%d/%Y"))
-	    	name = row[3]
-	    	oil = float(row[4])
-	    	
-	    	# Add data to the dictionary
-	    	if not name in data:
-	    		data[name] = [[], []]
-	        data[name][0].append(date)
-	        data[name][1].append(oil)
+# Preprocessing parameters
+REMOVE_ZEROS = True
+REMOVE_OUTLIERS = True
+SMOOTH_DATA = False
+NORMALIZE_DATA = True
 
-for name in data:
-	# Get data from dictionary
-	dates = data[name][0]
-	oils = data[name][1]
+OUTLIER_Z = 4
+SMOOTH_LEN = 3
+
+# Random seed
+SEED = 42
+
+
+def get_data():
+	"""Returns dictionary containing data from files in data directory"""
+	# Oil production data is contained in this dictionary
+	# Keys are the oil well names
+	# Values are lists containing oil production measurements
+	data = {}
 	
-	# Create a figure and add a subplot with labels
-	fig = plt.figure(1)
-	graph = fig.add_subplot(111)
-	fig.suptitle(name, fontsize=25)
-	plt.xlabel("Date", fontsize=15)
-	plt.ylabel("Production", fontsize=15)
-	
-	# Set the xtick locations to correspond to the dates every 12 months
-	graph.set_xticks(dates[0::12])
-	 
-	# Set the xtick labels to correspond to the dates every 12 months
-	date_labels = [num2date(date).strftime("%m/%y") for date in dates[0::12]]
-	graph.set_xticklabels(date_labels)
-	'''
-	# Remove zeroed data points
-	i = 0
-	while i < len(oils):
-		if oils[i] == 0:
-			del dates[i]
-			del oils[i]
+	# Get data from files in data directory
+	os.chdir(DATA_DIRECTORY)
+	for filename in os.listdir(os.getcwd()):
+		with open(filename, "rb") as csvfile:
+			# Open each data file with csv reader
+		    reader = csv.reader(csvfile, dialect="excel")
+
+		    # Ignore the first line because it contains headers
+		    reader.next()
+
+		    # Add each row to the corresponding oil well
+		    for row in reader:
+		    	# Get data from cells and convert appropriately
+		    	name = row[3]
+		    	oil = float(row[4])
+
+		    	# Add data to the dictionary
+		    	if not name in data:
+		    		data[name] = []
+		        data[name].append(oil)
+
+	# Return data dictionary
+	return data
+
+
+def preprocess_data(data):
+	"""Returns preprocessed version of the data"""
+	new_data = {}
+	chunks = []
+	for name in data:
+		# Remove zeroed data points (push points together)
+		if REMOVE_ZEROS:
+			oils = np.array(filter(lambda oil: oil != 0, data[name]))
 		else:
-			i += 1
-	'''		
-	# Convert data to numpy arrays
-	dates = np.array(dates)
-	oils = np.array(oils)
-	
-	# Plot the raw data as a red line with round markers
-	graph.plot(dates, oils, "r-o", label="Oil Production")
-	
-	# Performs convolutional smoothing (BAD: ASSUMES POINTS ARE SPACED EVENLY)
-	WINDOW_LEN = 6
-	if len(oils) > WINDOW_LEN:
-		s = np.r_[oils[WINDOW_LEN/2:0:-1], oils, oils[-1:-WINDOW_LEN/2:-1]]
-		oils = np.convolve(np.ones(WINDOW_LEN)/WINDOW_LEN, s, mode="valid")
- 	
-	# Plot the smoothed data as a green line with round markers
-	graph.plot(dates, oils, "g-o", label="Smoothed Oil Production")
-	
-	# Add legend, resize windows for Tkinter and display plot
-	plt.legend()
-	mng = plt.get_current_fig_manager()
-	mng.resize(*mng.window.maxsize())
-	plt.show()
+			oils = np.array(data[name])
+			
+		# Skip data set unless standard deviation is not 0
+		if np.std(oils) == 0:
+			continue
+		
+		# Remove outliers
+		if REMOVE_OUTLIERS:
+			oils = oils[abs(oils - np.mean(oils)) <= OUTLIER_Z*np.std(oils)]
+			
+		# Smooth data
+		if SMOOTH_DATA:
+			smooth_window = np.ones(SMOOTH_LEN)/SMOOTH_LEN
+			oils = np.convolve(smooth_window, oils, mode="valid")
+		
+		# Skip data set unless standard deviation is not 0
+		if np.std(oils) == 0:
+			continue
+		
+		# Normalize data
+		if NORMALIZE_DATA:
+			oils = (oils - np.mean(oils))/np.std(oils)
+		
+		# Add to new data dictionary
+		new_data[name] = oils
+		
+		# Make chunks
+		for i in xrange(0, len(oils), STEP_MONTHS):
+			in_index = i
+			out_index = i + IN_MONTHS
+			end_index = i + IN_MONTHS + OUT_MONTHS
+			if end_index < len(oils):
+				chunk = (oils[in_index:out_index], oils[out_index:end_index])
+				chunks.append(chunk)
+
+	return new_data, chunks
+
+
+def plot_data(data):
+	"""Plots the data using pyplot"""
+	for name in data:
+		# Create a figure and add a subplot with labels
+		fig = plt.figure(1)
+		graph = fig.add_subplot(111)
+		fig.suptitle(name, fontsize=25)
+		plt.xlabel("Year", fontsize=15)
+		plt.ylabel("Production", fontsize=15)
+
+		# Plot the data as a red line with round markers
+		graph.plot(data[name], "r-o", label="Oil Production")
+
+		# Add legend, resize windows, and display plot
+		plt.legend()
+		mng = plt.get_current_fig_manager()
+		mng.resize(*mng.window.maxsize())
+		plt.show()
+
+
+def plot_chunks(chunks):
+	"""Plots the chunks using pyplot"""
+	for chunk in chunks:
+		# Create a figure and add a subplot with labels
+		fig = plt.figure(1)
+		graph = fig.add_subplot(111)
+		fig.suptitle("Chunk Data", fontsize=25)
+		plt.xlabel("Year", fontsize=15)
+		plt.ylabel("Production", fontsize=15)
+		
+		# Plot the predictions as a green line with round markers
+		graph.plot(np.append(chunk[0], chunk[1]), "g-o", label="Predicted Output")
+
+		# Plot the data as a red line with round markers
+		graph.plot(chunk[0], "r-o", label="Oil Output")
+
+		# Add legend, resize windows, and display plot
+		plt.legend()
+		mng = plt.get_current_fig_manager()
+		mng.resize(*mng.window.maxsize())
+		plt.show()
+		
+		
+def generate_data_sets(chunks):
+	"""Generate the training and validation sets by splitting the chunks using
+	5:1 ratio"""
+	rnd.seed(SEED)
+	rnd.shuffle(chunks)
+	valid_set = chunks[:len(chunks)/6]
+	train_set = chunks[len(chunks)/6:]
+	return train_set, valid_set
+
+
+if __name__ == '__main__':
+	print "Getting data..."
+	data = get_data()
+	print "Preprocessing data..."
+	data, chunks = preprocess_data(data)
+	print "Generating data sets..."
+	data_sets = generate_data_sets(chunks)
+	print "Writing data sets to qri.pkl.gz..."
+	os.chdir("..")
+	with gzip.open("qri.pkl.gz", "wb") as file:
+		file.write(cPickle.dumps(data_sets))
+	print "Done!"
