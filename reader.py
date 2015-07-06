@@ -1,5 +1,7 @@
 """Provides methods for obtaining, viewing, splitting oil production data"""
 import csv
+import cPickle
+import gzip
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -147,11 +149,27 @@ def plot_chunks(chunks):
 		mng = plt.get_current_fig_manager()
 		mng.resize(*mng.window.maxsize())
 		plt.show()
-
-if __name__ == '__main__':
-	data = get_data()
-	data, chunks = preprocess_data(data)
+		
+		
+def generate_data_sets(chunks):
+	"""Generate the training and validation sets by splitting the chunks using
+	5:1 ratio"""
 	rnd.seed(SEED)
 	rnd.shuffle(chunks)
 	valid_set = chunks[:len(chunks)/6]
 	train_set = chunks[len(chunks)/6:]
+	return train_set, valid_set
+
+
+if __name__ == '__main__':
+	print "Getting data..."
+	data = get_data()
+	print "Preprocessing data..."
+	data, chunks = preprocess_data(data)
+	print "Generating data sets..."
+	data_sets = generate_data_sets(chunks)
+	print "Writing data sets to qri.pkl.gz..."
+	os.chdir("..")
+	with gzip.open("qri.pkl.gz", "wb") as file:
+		file.write(cPickle.dumps(data_sets))
+	print "Done!"
