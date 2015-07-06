@@ -27,7 +27,10 @@ mode = theano.Mode(linker='cvm')
 
 def load_text(dataset):
     filename = open(dataset, "r")
-    
+    string = filename.read().replace('\n', ' ')
+    string = string.split(". ")
+    string = [item + "." for item in string]
+    string = string[:len(string) - 1]
 
 class RNN(object):
     """
