@@ -25,13 +25,6 @@ plt.ion()
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
-def load_text(dataset):
-    filename = open(dataset, "r")
-    string = filename.read().replace('\n', ' ')
-    string = string.split(". ")
-    string = [item + "." for item in string]
-    string = string[:len(string) - 1]
-
 class RNN(object):
     """
     Recurrent neural network class
@@ -40,9 +33,10 @@ class RNN(object):
     binary : binary output units, use cross-entropy error
     softmax : single softmax out, use cross-entropy error
     """
-    def __init__(self, input, n_in, n_hidden, n_out, activation=T.tanh,
+    def __init__(self, dataset, input, n_in, n_hidden, n_out, activation=T.tanh,
                  output_type='real', use_symbolic_softmax=False):
 
+        self.dataset = dataset
         self.input = input
         self.activation = activation
         self.output_type = output_type
@@ -346,6 +340,13 @@ class MetaRNN(BaseEstimator):
         state = pickle.load(file)
         self.__setstate__(state)
         file.close()
+
+    def load_text(self):
+        filename = open(self.dataset, "r")
+        string = filename.read().replace('\n', ' ')
+        string = string.split(". ")
+        string = [item + "." for item in string]
+        string = string[:len(string) - 1]
 
     def fit(self, X_train, Y_train, X_test=None, Y_test=None,
             validation_frequency=100):
