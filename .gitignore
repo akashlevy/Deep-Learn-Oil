@@ -61,4 +61,4 @@ target/
 .~lock*
 
 # Deep Learning Tutorials
-papers/ComputeFest2015_DeepLearning/
+ComputeFest2015_DeepLearning/
