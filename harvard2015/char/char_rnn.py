@@ -25,6 +25,58 @@ plt.ion()
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
+def load_text(dataset):
+    filename = open(dataset, "r")
+    strings = filename.read().replace('_', '')
+    length = len(strings)
+    strings = strings.split(". ")
+    strings = [item + "." for item in strings][:len(strings) - 1]
+    return strings, length
+    # ord(c)
+    # chr(99)
+
+# n_seq: number of sentences
+# n_steps: "hello" --> 4
+# n_in: "hello" take "he" --> 2
+def make_sequence(text, n_steps, n_in):
+    arr, first, second = [], [], []
+    nsteps, nin = 0, 0
+    for item in text:
+        for char in item:
+            second.append(ord(char))
+            nin += 1
+            if (nin >= n_in):
+                first.append(second)
+                nsteps += 1
+                second = []
+                nin = 0
+            if (nsteps >= n_steps):
+                arr.append(first)
+                first = []
+                nsteps = 0
+    return arr
+
+def make_sequence2(text, n_steps, n_in):
+    arr, first, second = [], [], []
+    one, nsteps, nin = 1, 0, 0
+    for item in text:
+        for char in item:
+            if (one == 1):
+                one = 0
+            else:
+                second.append(ord(char))
+                nin += 1
+                if (nin >= n_in):
+                    first.append(second)
+                    nsteps += 1
+                    second = []
+                    nin = 0
+                if (nsteps >= n_steps):
+                    arr.append(first)
+                    first = []
+                    nsteps = 0
+    return arr
+
 class RNN(object):
     """
     Recurrent neural network class
@@ -33,10 +85,9 @@ class RNN(object):
     binary : binary output units, use cross-entropy error
     softmax : single softmax out, use cross-entropy error
     """
-    def __init__(self, dataset, input, n_in, n_hidden, n_out, activation=T.tanh,
+    def __init__(self, input, n_in, n_hidden, n_out, activation=T.tanh,
                  output_type='real', use_symbolic_softmax=False):
 
-        self.dataset = dataset
         self.input = input
         self.activation = activation
         self.output_type = output_type
@@ -257,32 +308,16 @@ class MetaRNN(BaseEstimator):
         else:
             raise NotImplementedError
 
-    def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
-
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
+    def shared_dataset(self, data_xy):
+        """ Function that loads the dataset into shared variables """
         data_x, data_y = data_xy
-        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX), borrow=borrow)
-        shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX), borrow=borrow)
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_y`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesn't make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets us get around this issue
+        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX))
+        shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX))
 
-        # if self.output_type in ('binary', 'softmax'):
-        #     return shared_x, T.cast(shared_y, 'int32')
-        # else:
-        #     return shared_x, shared_y
-
-        return shared_x, T.cast(shared_y, 'int32')
+        if self.output_type in ('binary', 'softmax'):
+            return shared_x, T.cast(shared_y, 'int32')
+        else:
+            return shared_x, shared_y
 
     def __getstate__(self):
         """ Return state sequence."""
@@ -341,13 +376,6 @@ class MetaRNN(BaseEstimator):
         self.__setstate__(state)
         file.close()
 
-    def load_text(self):
-        filename = open(self.dataset, "r")
-        string = filename.read().replace('\n', ' ')
-        string = string.split(". ")
-        string = [item + "." for item in string]
-        string = string[:len(string) - 1]
-
     def fit(self, X_train, Y_train, X_test=None, Y_test=None,
             validation_frequency=100):
         """ Fit model
@@ -390,7 +418,7 @@ class MetaRNN(BaseEstimator):
                                               givens={
                                                   self.x: train_set_x[index],
                                                   self.y: train_set_y[index]},
-            mode=mode)
+                                              mode=mode)
 
         if self.interactive:
             compute_test_error = theano.function(inputs=[index, ],
@@ -558,30 +586,28 @@ def test_binary(multiple_out=False, n_epochs=250):
         ax2.set_title('solid: true output, dashed: model output (prob)')
 
 
-def test_softmax(n_epochs=250):
+def test_softmax(dataset, n_epochs=250):
     """ Test RNN with softmax outputs. """
+    text, length = load_text(dataset)
     n_hidden = 10
     n_in = 5
     n_steps = 10
-    n_seq = 100
-    n_classes = 3
-    n_out = n_classes  # restricted to single softmax per time step
+    n_seq = length / n_in * n_steps
+    n_classes = 48 # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_out = n_classes # restricted to single softmax per time step
 
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
-    targets = np.zeros((n_seq, n_steps), dtype=np.int)
+    seq = np.asarray(make_sequence(text, n_steps, n_in))
+    targets = np.asarray(make_sequence2(text, n_steps, n_in))
 
-    thresh = 0.5
-    # if lag 1 (dim 3) is greater than lag 2 (dim 0) + thresh
-    # class 1
-    # if lag 1 (dim 3) is less than lag 2 (dim 0) - thresh
-    # class 2
-    # if lag 2(dim0) - thresh <= lag 1 (dim 3) <= lag2(dim0) + thresh
-    # class 0
-    targets[:, 2:][seq[:, 1:-1, 3] > seq[:, :-2, 0] + thresh] = 1
-    targets[:, 2:][seq[:, 1:-1, 3] < seq[:, :-2, 0] - thresh] = 2
-    #targets[:, 2:, 0] = np.cast[np.int](seq[:, 1:-1, 3] > seq[:, :-2, 0])
+    # n_hidden = 10
+    # n_in = 5
+    # n_steps = 10
+    # n_seq = 100
+    # n_classes = 3
+    # n_out = n_classes  # restricted to single softmax per time step
+
+    # seq = np.random.randn(n_seq, n_steps, n_in)
+    # targets = np.zeros((n_seq, n_steps), dtype=np.int)
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
@@ -590,31 +616,35 @@ def test_softmax(n_epochs=250):
 
     model.fit(seq, targets, validation_frequency=1000)
 
+    # seqs = xrange(10)
+    # plt.close('all')
+    # for seq_num in seqs:
+    #     fig = plt.figure()
+    #     ax1 = plt.subplot(211)
+    #     plt.plot(seq[seq_num])
+    #     ax1.set_title('input')
+    #     ax2 = plt.subplot(212)
+
+    #     # blue line will represent true classes
+    #     true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
+
+    #     # show probabilities (in b/w) output by model
+    #     guess = model.predict_proba(seq[seq_num])
+    #     guessed_probs = plt.imshow(guess.T, interpolation='nearest', cmap='gray')
+    #     ax2.set_title('blue: true class, grayscale: probs assigned by model')
+    #     plt.show()
+
     seqs = xrange(10)
-
-    plt.close('all')
     for seq_num in seqs:
-        fig = plt.figure()
-        ax1 = plt.subplot(211)
-        plt.plot(seq[seq_num])
-        ax1.set_title('input')
-        ax2 = plt.subplot(212)
-
-        # blue line will represent true classes
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
-
-        # show probabilities (in b/w) output by model
-        guess = model.predict_proba(seq[seq_num])
-        guessed_probs = plt.imshow(guess.T, interpolation='nearest',
-                                   cmap='gray')
-        ax2.set_title('blue: true class, grayscale: probs assigned by model')
-
+        guess = model.predict(seq[seq_num])
+        print(guess)
+        print("=====")
+        # print(chr(guess))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real()
-    # problem takes more epochs to solve
+    # test_real()
     #test_binary(multiple_out=True, n_epochs=2400)
-    #test_softmax(n_epochs=250)
+    test_softmax("pride_and_prejudice.txt", 1)
     print "Elapsed time: %f" % (time.time() - t0)
