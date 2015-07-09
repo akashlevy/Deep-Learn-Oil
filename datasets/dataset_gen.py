@@ -70,7 +70,8 @@ def get_data():
 def preprocess_data(data):
 	"""Returns preprocessed version of the data"""
 	new_data = {}
-	chunks = []
+	x = []
+	y = []
 	for name in data:
 		# Remove zeroed data points (push points together)
 		if REMOVE_ZEROS:
@@ -78,7 +79,7 @@ def preprocess_data(data):
 		else:
 			oils = np.array(data[name])
 			
-		# Skip data set unless standard deviation is not 0
+		# Skip data set unless standard deviation is non-zero
 		if np.std(oils) == 0:
 			continue
 		
@@ -108,10 +109,14 @@ def preprocess_data(data):
 			out_index = i + IN_MONTHS
 			end_index = i + IN_MONTHS + OUT_MONTHS
 			if end_index < len(oils):
-				chunk = (oils[in_index:out_index], oils[out_index:end_index])
-				chunks.append(chunk)
-
-	return new_data, chunks
+				x.append(oils[in_index:out_index])
+				y.append(oils[out_index:end_index])
+	
+	rnd.seed(SEED)
+	shuffled = list(zip(x, y))
+	rnd.shuffle(shuffled)
+	x, y = zip(*shuffled)
+	return new_data, (np.array(x), np.array(y))
 
 
 def plot_data(data):
@@ -136,7 +141,7 @@ def plot_data(data):
 
 def plot_chunks(chunks):
 	"""Plots the chunks using pyplot"""
-	for chunk in chunks:
+	for chunk in zip(chunks[0], chunks[1]):
 		# Create a figure and add a subplot with labels
 		fig = plt.figure(1)
 		graph = fig.add_subplot(111)
@@ -160,11 +165,12 @@ def plot_chunks(chunks):
 def generate_data_sets(chunks):
 	"""Generate the training, validation, testing sets by splitting the chunks
 	using 6:1:1 ratio"""
-	rnd.shuffle(chunks)
-	train_set = chunks[:6*len(chunks)/8]
-	valid_set = chunks[6*len(chunks)/8:7*len(chunks)/8]
-	test_set = chunks[7*len(chunks)/8:]
-	
+	train_set = (chunks[0][:6*len(chunks)/8],
+				 chunks[1][:6*len(chunks)/8])
+	valid_set = (chunks[0][6*len(chunks)/8:7*len(chunks)/8],
+				 chunks[1][6*len(chunks)/8:7*len(chunks)/8])
+	test_set = (chunks[0][7*len(chunks)/8:],
+				chunks[1][7*len(chunks)/8:])
 	return train_set, valid_set, test_set
 
 
@@ -184,3 +190,4 @@ if __name__ == '__main__':
 	# plot_data(data)
 	# print "Plotting chunks..."
 	# plot_chunks(chunks)
+	print chunks
