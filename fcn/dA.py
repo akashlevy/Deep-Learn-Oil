@@ -261,8 +261,8 @@ class dA(object):
         return (cost, updates)
 
 
-def test_dA_sanity(learning_rate=0.1, training_epochs=15,
-                   dataset='../datasets/da_sanity.pkl.gz', batch_size=20):
+def test_dA_sanity(learning_rate=0.001, training_epochs=500,
+                   dataset='../datasets/da_sanity.pkl.gz', batch_size=15):
 
     """
     This demo is tested on da_sanity
@@ -282,7 +282,6 @@ def test_dA_sanity(learning_rate=0.1, training_epochs=15,
     train_set_x, train_set_y = datasets[0]
 
     # compute number of minibatches for training, validation and testing
-    print train_set_x.get_value(borrow=True).shape
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
 
     # start-snippet-2

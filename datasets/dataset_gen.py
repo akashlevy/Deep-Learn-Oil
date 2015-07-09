@@ -165,12 +165,12 @@ def plot_chunks(chunks):
 def generate_data_sets(chunks):
 	"""Generate the training, validation, testing sets by splitting the chunks
 	using 6:1:1 ratio"""
-	train_set = (chunks[0][:6*len(chunks)/8],
-				 chunks[1][:6*len(chunks)/8])
-	valid_set = (chunks[0][6*len(chunks)/8:7*len(chunks)/8],
-				 chunks[1][6*len(chunks)/8:7*len(chunks)/8])
-	test_set = (chunks[0][7*len(chunks)/8:],
-				chunks[1][7*len(chunks)/8:])
+	train_set = (chunks[0][::6*len(chunks)/8,],
+				 chunks[1][::6*len(chunks)/8,])
+	valid_set = (chunks[0][6*len(chunks)/8::7*len(chunks)/8,],
+				 chunks[1][6*len(chunks)/8::7*len(chunks)/8,])
+	test_set = (chunks[0][7*len(chunks)/8::,],
+				chunks[1][7*len(chunks)/8::,])
 	return train_set, valid_set, test_set
 
 
@@ -190,4 +190,3 @@ if __name__ == '__main__':
 	# plot_data(data)
 	# print "Plotting chunks..."
 	# plot_chunks(chunks)
-	print chunks
