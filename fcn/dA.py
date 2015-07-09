@@ -47,6 +47,9 @@ try:
     import PIL.Image as Image
 except ImportError:
     import Image
+    
+import warnings
+warnings.filterwarnings('error')
 
 
 class dA(object):
@@ -259,7 +262,7 @@ class dA(object):
 
 
 def test_dA_sanity(learning_rate=0.1, training_epochs=15,
-                   dataset='da_sanity.pkl.gz', batch_size=20):
+                   dataset='../datasets/da_sanity.pkl.gz', batch_size=20):
 
     """
     This demo is tested on da_sanity
@@ -279,6 +282,7 @@ def test_dA_sanity(learning_rate=0.1, training_epochs=15,
     train_set_x, train_set_y = datasets[0]
 
     # compute number of minibatches for training, validation and testing
+    print train_set_x.get_value(borrow=True).shape
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
 
     # start-snippet-2
@@ -287,13 +291,9 @@ def test_dA_sanity(learning_rate=0.1, training_epochs=15,
     x = T.matrix('x')  # the data is presented as rasterized images
     # end-snippet-2
 
-    if not os.path.isdir(output_folder):
-        os.makedirs(output_folder)
-    os.chdir(output_folder)
-
-    ####################################
-    # BUILDING THE MODEL NO CORRUPTION #
-    ####################################
+    #####################################
+    # BUILDING THE MODEL 30% CORRUPTION #
+    #####################################
 
     rng = numpy.random.RandomState(42)
     theano_rng = RandomStreams(rng.randint(2 ** 30))
@@ -304,64 +304,6 @@ def test_dA_sanity(learning_rate=0.1, training_epochs=15,
         input=x,
         n_visible=100,
         n_hidden=80
-    )
-
-    cost, updates = da.get_cost_updates(
-        corruption_level=0.,
-        learning_rate=learning_rate
-    )
-
-    train_da = theano.function(
-        [index],
-        cost,
-        updates=updates,
-        givens={
-            x: train_set_x[index * batch_size: (index + 1) * batch_size]
-        }
-    )
-
-    start_time = time.clock()
-
-    ############
-    # TRAINING #
-    ############
-
-    # go through training epochs
-    for epoch in xrange(training_epochs):
-        # go through trainng set
-        c = []
-        for batch_index in xrange(n_train_batches):
-            c.append(train_da(batch_index))
-
-        print 'Training epoch %d, cost ' % epoch, numpy.mean(c)
-
-    end_time = time.clock()
-
-    training_time = (end_time - start_time)
-
-    print >> sys.stderr, ('The no corruption code for file ' +
-                          os.path.split(__file__)[1] +
-                          ' ran for %.2fm' % ((training_time) / 60.))
-    image = Image.fromarray(
-        tile_raster_images(X=da.W.get_value(borrow=True).T,
-                           img_shape=(28, 28), tile_shape=(10, 10),
-                           tile_spacing=(1, 1)))
-    image.save('filters_corruption_0.png')
-
-    # start-snippet-3
-    #####################################
-    # BUILDING THE MODEL CORRUPTION 30% #
-    #####################################
-
-    rng = numpy.random.RandomState(123)
-    theano_rng = RandomStreams(rng.randint(2 ** 30))
-
-    da = dA(
-        numpy_rng=rng,
-        theano_rng=theano_rng,
-        input=x,
-        n_visible=28 * 28,
-        n_hidden=500
     )
 
     cost, updates = da.get_cost_updates(
@@ -386,7 +328,7 @@ def test_dA_sanity(learning_rate=0.1, training_epochs=15,
 
     # go through training epochs
     for epoch in xrange(training_epochs):
-        # go through trainng set
+        # go through training set
         c = []
         for batch_index in xrange(n_train_batches):
             c.append(train_da(batch_index))
@@ -397,20 +339,11 @@ def test_dA_sanity(learning_rate=0.1, training_epochs=15,
 
     training_time = (end_time - start_time)
 
-    print >> sys.stderr, ('The 30% corruption code for file ' +
+    print >> sys.stderr, ('The code for file ' +
                           os.path.split(__file__)[1] +
-                          ' ran for %.2fm' % (training_time / 60.))
-    # end-snippet-3
+                          ' ran for %.2fm' % ((training_time) / 60.))
 
-    # start-snippet-4
-    image = Image.fromarray(tile_raster_images(
-        X=da.W.get_value(borrow=True).T,
-        img_shape=(28, 28), tile_shape=(10, 10),
-        tile_spacing=(1, 1)))
-    image.save('filters_corruption_30.png')
-    # end-snippet-4
-
-    os.chdir('../')
+    print da.get_reconstructed_input(da.get_hidden_values(da.get_corrupted_input(x, 0.3)))
     
     
 def test_dA(learning_rate=0.1, training_epochs=15,
@@ -570,4 +503,4 @@ def test_dA(learning_rate=0.1, training_epochs=15,
 
 
 if __name__ == '__main__':
-    test_dA()
+    test_dA_sanity()
