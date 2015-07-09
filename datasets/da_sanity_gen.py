@@ -34,13 +34,13 @@ def plot_curves(data):
 
 def split_data_sets(data):
 	"""Generate the training, validation, testing sets by splitting the data
-	using 6:1:1 ratio"""
-	train_set = (data[0][:6*len(data)/8],
-				 data[1][:6*len(data)/8])
-	valid_set = (data[0][6*len(data)/8:7*len(data)/8],
-				 data[1][6*len(data)/8:7*len(data)/8])
-	test_set = (data[0][7*len(data)/8:],
-			    data[1][7*len(data)/8:])
+	using 6:1:1 ratio"""	
+	train_set = (data[0][::6*len(data)/8,],
+				 data[1][::6*len(data)/8,])
+	valid_set = (data[0][6*len(data)/8::7*len(data)/8,],
+				 data[1][6*len(data)/8::7*len(data)/8,])
+	test_set = (data[0][7*len(data)/8::],
+			    data[1][7*len(data)/8::])
 	
 	return train_set, valid_set, test_set
 
@@ -65,7 +65,6 @@ if __name__ == '__main__':
 	print "Splitting into data sets..."
 	data_sets = split_data_sets(data)
 	print "Writing data sets to da_sanity.pkl.gz..."
-	print data_sets[0]
 	with gzip.open("da_sanity.pkl.gz", "wb") as file:
 		file.write(cPickle.dumps(data_sets))
 	print "Done!"
