@@ -1,61 +1,26 @@
-"""ADD IN MOMENTUM?"""
-
+import conv1d
+import numpy as np
 import theano.tensor as T
-from theano import shared, function
-from convolutional_mlp import LeNetConvPoolLayer
-from logistic_sgd import LogisticRegression, load_data
-from mlp import HiddenLayer
 
-# Theano settings and random number generator
-theano.config.floatX = "float32"
+# Initialize random number generator
 rng = np.random.RandomState(42)
 
 # Load data sets
-dataset = "mnist.pkl.gz"
-#dataset = "../qri.pkl.gz"
-datasets = load_data(dataset)
-train_set_x, train_set_y = datasets[0]
-valid_set_x, valid_set_y = datasets[1]
-test_set_x, test_set_y = datasets[2]
-print "Size of the training data matrix: ", train_set_x.get_value().shape
-
-# Network parameters
-input_size = (6, 6)
-num_kernels = [9, 9]
-kernel_sizes = [(3, 3), (2, 2)]
-output_size = 12
-pool_size = (1, 1)
-
-# Training parameters
-learning_rate = 0.1
-batch_size = 1
+dataset_file = "../datasets/qri.pkl.gz"
+datasets = conv1d.load_data(dataset_file)
 
 # Input and output
 x = T.matrix('x')
-y = T.vector('y')
+y = T.matrix('y')
 
-# Split into batches
-n_train_batches = train_set_x.get_value(borrow=True).shape[0]
-n_test_batches = test_set_x.get_value(borrow=True).shape[0]
-n_valid_batches = valid_set_x.get_value(borrow=True).shape[0]
-n_train_batches /= batch_size
-n_test_batches /= batch_size
-n_valid_batches /= batch_size
+# Make neural network
+layer0 = conv1d.ConvPoolLayer(rng, x, input_length=36, batch_size=25, filters=10, filter_length=5, poolsize=4)
+print layer0.input_size, layer0.output_size, layer0.filter_size
+layer1 = conv1d.ConvPoolLayer(rng, layer0.output, input_number=10, input_length=8, batch_size=25, filters=10, filter_length=4, poolsize=5)
+print layer1.input_size, layer1.output_size, layer1.filter_size
+layer2 = conv1d.FullyConnectedLayer(rng, layer1.output.flatten(), n_in=100, n_out=12)
+network = conv1d.ConvNetwork(datasets, x, y, batch_size=25, layers=[layer0, layer1, layer2], learning_rate=0.1)
 
-# Check that we have a multiple of pool_size before pooling
-assert ((28 - kernel_sizes[0][0] + 1) % pool_size[0]) == 0
-
-# Get input and output sizes
-layer0_input_size = (batch_size, 1, input_size[0], input_size[1])
-edge0 = (6 - kernel_sizes[0][0] + 1)/pool_size[0]
-layer0_output_size = (batch_size, num_kernels[0], edge0, edge0)
-
-# Reshape placeholder x to the input size of the network
-layer0_input = x.reshape(layer0_input_size)
-
-filter_shape = (num_kernels[0], 1) + kernel_sizes[0]
-layer0 = LeNetConvPoolLayer(rng, layer0_input, layer0_input_size, filter_shape,
-                            pool_size)
-
-
-layer0 = LeNetConvPoolLayer(rng, layer0_input, layer0_input_size, (num_kernels[0], 1) + kernel_sizes[0], (1, 1))
+# Train and test neural network
+network.train(10)
+network.test()
