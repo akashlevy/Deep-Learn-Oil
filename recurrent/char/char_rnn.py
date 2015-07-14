@@ -16,18 +16,23 @@ import os
 import theano
 import time
 
+from collections import OrderedDict
 from sklearn.base import BaseEstimator
 from theano import tensor as T
 
 logger = logging.getLogger(__name__)
 plt.ion()
 
-mode = theano.Mode(linker='cvm')
+mode = theano.Mode(linker='py', optimizer='fast_compile')
 #mode = 'DEBUG_MODE'
 
+"""
+Loads a PlainText file into a string without '\n'.
+Returns the string and the length of the string.
+"""
 def load_text(dataset):
     filename = open(dataset, "r")
-    strings = filename.read().replace('_', '')
+    strings = filename.read().replace('\n', ' ').replace('_', '')
     return strings, len(strings)
 
 """
@@ -78,6 +83,10 @@ def make_target(text, n_seq, n_steps):
             nsteps = 0
     return arr
 
+"""
+Return the number of unique characters in a sequence of text.
+Calculates number of output classes for softmax classification.
+"""
 def unique_char(text):
     unique = []
     for char in text:
@@ -443,12 +452,13 @@ class MetaRNN(BaseEstimator):
             gparam = T.grad(cost, param)
             gparams.append(gparam)
 
-        updates = {}
+        updates = []
         for param, gparam in zip(self.rnn.params, gparams):
             weight_update = self.rnn.updates[param]
             upd = mom * weight_update - l_r * gparam
-            updates[weight_update] = upd
-            updates[param] = param + upd
+            updates.append((weight_update, upd))
+            updates.append((param, param + upd))
+        updates = OrderedDict(updates)
 
         # compiling a Theano function `train_model` that returns the
         # cost, but in the same time updates the parameter of the
@@ -459,7 +469,7 @@ class MetaRNN(BaseEstimator):
                                       givens={
                                           self.x: train_set_x[index],
                                           self.y: train_set_y[index]},
-                                          mode=mode)
+                                      mode=mode)
 
         ###############
         # TRAIN MODEL #
@@ -469,6 +479,7 @@ class MetaRNN(BaseEstimator):
 
         while (epoch < self.n_epochs):
             epoch = epoch + 1
+
             for idx in xrange(n_train):
                 effective_momentum = self.final_momentum \
                                if epoch > self.momentum_switchover \
@@ -482,6 +493,7 @@ class MetaRNN(BaseEstimator):
 
                 if iter % validation_frequency == 0:
                     # compute loss on training set
+                    print("Calculating training losses...")
                     train_losses = [compute_train_error(i)
                                     for i in xrange(n_train)]
                     this_train_loss = np.mean(train_losses)
@@ -502,25 +514,25 @@ class MetaRNN(BaseEstimator):
                                      self.learning_rate))
 
             self.learning_rate *= self.learning_rate_decay
+            print("SELF LEARNING RATE: " + str(self.learning_rate))
 
-def test_real():
+def test_real(dataset):
     """ Test RNN with real-valued outputs. """
+    # targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
+    # targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
+    # targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
+    # targets += 0.01 * np.random.standard_normal(targets.shape)
+
+    text, length = load_text(dataset)
     n_hidden = 10
     n_in = 5
-    n_out = 3
     n_steps = 10
-    n_seq = 100
+    n_seq = length / (n_in * n_steps)
+    n_classes = unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_out = n_classes # restricted to single softmax per time step
 
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
-    targets = np.zeros((n_seq, n_steps, n_out))
-
-    targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
-    targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
-    targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
-
-    targets += 0.01 * np.random.standard_normal(targets.shape)
+    seq = np.asarray(make_sequence(text, n_steps, n_in))
+    targets = np.asarray(make_sequence(text[:1], n_steps, n_in))
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
@@ -601,7 +613,7 @@ def test_softmax(dataset, n_epochs=250):
     n_in = 5
     n_steps = 10
     n_seq = length / (n_in * n_steps)
-    n_classes = unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_classes = unique_char(text) + 50 # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
     seq = np.asarray(make_sequence(text, n_steps, n_in))
@@ -610,7 +622,7 @@ def test_softmax(dataset, n_epochs=250):
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
                     n_epochs=n_epochs, activation='tanh',
-                    output_type='softmax', use_symbolic_softmax=False)
+                    output_type='softmax', use_symbolic_softmax=True)
 
     model.fit(seq, targets, validation_frequency=1000)
 
@@ -636,13 +648,11 @@ def test_softmax(dataset, n_epochs=250):
     for seq_num in seqs:
         guess = model.predict(seq[seq_num])
         print(guess)
-        print("=====")
-        # print(chr(guess))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    # test_real()
+    # test_real("pride_and_prejudice.txt")
     #test_binary(multiple_out=True, n_epochs=2400)
     test_softmax("pride_and_prejudice.txt", 1)
     print "Elapsed time: %f" % (time.time() - t0)
