@@ -157,8 +157,6 @@ def plot_chunks(chunks):
 
 		# Add legend, resize windows, and display plot
 		plt.legend()
-		mng = plt.get_current_fig_manager()
-		mng.resize(*mng.window.maxsize())
 		plt.show()
 		
 		
@@ -188,5 +186,5 @@ if __name__ == '__main__':
 	print "Done!"
 	# print "Plotting data..."
 	# plot_data(data)
-	# print "Plotting chunks..."
-	# plot_chunks(chunks)
+	print "Plotting chunks..."
+	plot_chunks(chunks)
