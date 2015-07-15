@@ -125,7 +125,7 @@ def plot_data(data):
 		fig = plt.figure(1)
 		graph = fig.add_subplot(111)
 		fig.suptitle(name, fontsize=25)
-		plt.xlabel("Year", fontsize=15)
+		plt.xlabel("Month", fontsize=15)
 		plt.ylabel("Production", fontsize=15)
 
 		# Plot the data as a red line with round markers
@@ -145,7 +145,7 @@ def plot_chunks(chunks):
 		fig = plt.figure(1)
 		graph = fig.add_subplot(111)
 		fig.suptitle("Chunk Data", fontsize=25)
-		plt.xlabel("Year", fontsize=15)
+		plt.xlabel("Month", fontsize=15)
 		plt.ylabel("Production", fontsize=15)
 		
 		# Plot the predictions as a green line with round markers
@@ -154,10 +154,8 @@ def plot_chunks(chunks):
 		# Plot the data as a red line with round markers
 		graph.plot(chunk[0], "r-o", label="Oil Output")
 
-		# Add legend, resize windows, and display plot
+		# Add legend and display plot
 		plt.legend()
-		mng = plt.get_current_fig_manager()
-		mng.resize(*mng.window.maxsize())
 		plt.show()
 		
 		
