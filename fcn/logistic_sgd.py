@@ -109,8 +109,8 @@ class LogisticRegression(object):
         # parameters of the model
         self.params = [self.W, self.b]
 
-    def negative_log_likelihood(self, y):
-        """Return the mean of the negative log-likelihood of the prediction
+    def _log_likelihood(self, y):
+        """Return the mean of the  log-likelihood of the prediction
         of this model under a given target distribution.
 
         .. math::
@@ -294,9 +294,9 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     # Each MNIST image has size 28*28
     classifier = LogisticRegression(input=x, n_in=28 * 28, n_out=10)
 
-    # the cost we minimize during training is the negative log likelihood of
+    # the cost we minimize during training is the  log likelihood of
     # the model in symbolic format
-    cost = classifier.negative_log_likelihood(y)
+    cost = classifier._log_likelihood(y)
 
     # compiling a Theano function that computes the mistakes that are made by
     # the model on a minibatch
