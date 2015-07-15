@@ -62,3 +62,10 @@ target/
 
 # Deep Learning Tutorials
 ComputeFest2015_DeepLearning/
+
+# Mac DS Store
+.DS_Store
+
+# Eclipse/PyDev Projects
+.project
+.pydevproject

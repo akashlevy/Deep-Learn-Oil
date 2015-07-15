@@ -38,7 +38,7 @@ with gzip.open("big_model.pkl.gz", "rb") as file:
 import numpy as np
 import matplotlib.pyplot as plt
 
-predictions = network.output(network.test_set_x.get_value(borrow=True))
+predictions = network.output(network.test_set_x.get_value(borrow=True)[0:25])
 for chunk in zip(network.test_set_x.get_value(borrow=True), network.test_set_y.get_value(borrow=True), predictions):
     # Create a figure and add a subplot with labels
     fig = plt.figure(1)

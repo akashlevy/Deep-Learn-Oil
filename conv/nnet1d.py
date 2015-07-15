@@ -1,26 +1,6 @@
 """Library for 1D neural networks using Theano: supports convolutional and
 fully connected layers"""
 
-# ADD MOMENTUM
-# ADD EARLY STOPPING AND EARLY STOPPING PARAMETERS/OPTIONS TO TURN OFF (ORNAH?)
-# MODULARIZE
-# LATER:
-# ADD ACTIVATION FUNCTION
-# ADD LOGISTIC REGRESSION
-# ADD RBM AND RNN
-
-# GET FILTERS
-# GET INTERMEDIATE STATES
-# GET OUTPUT OF NEURAL NETWORK (PREDICTION)
-# TEST WITH MULTILAYER PERCEPTRON
-
-# FIX STYLE FOR LAYERS1D
-# KEEP TRACK OF EPOCHS ELAPSED?
-
-# WONKY STUFF: SAME ERROR FOR VALID AND TEST
-
-# IMPROVEMENTS: FROM THE SAME WELL, USING WATER/GAS DATA AS WELL
-
 import cPickle
 import gzip
 import numpy as np
@@ -178,7 +158,7 @@ class NNet1D(object):
         
         # Shared variables for output
         x = T.matrix()
-        givens = {self.x: x[0:batch_size]} #############FIX THIS#################
+        givens = {self.x: x} #############FIX THIS#################
         
         # Make Theano output function
         self.output = theano.function([x], self.layers[-1].output, givens=givens)
