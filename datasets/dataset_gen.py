@@ -112,7 +112,6 @@ def preprocess_data(data):
 				x.append(oils[in_index:out_index])
 				y.append(oils[out_index:end_index])
 	
-	rnd.seed(SEED)
 	shuffled = list(zip(x, y))
 	rnd.shuffle(shuffled)
 	x, y = zip(*shuffled)
@@ -165,12 +164,12 @@ def plot_chunks(chunks):
 def generate_data_sets(chunks):
 	"""Generate the training, validation, testing sets by splitting the chunks
 	using 6:1:1 ratio"""
-	train_set = (chunks[0][::6*len(chunks)/8,],
-				 chunks[1][::6*len(chunks)/8,])
-	valid_set = (chunks[0][6*len(chunks)/8::7*len(chunks)/8,],
-				 chunks[1][6*len(chunks)/8::7*len(chunks)/8,])
-	test_set = (chunks[0][7*len(chunks)/8::,],
-				chunks[1][7*len(chunks)/8::,])
+	train_set = (chunks[0][:6*len(chunks[0])/8,],
+				 chunks[1][:6*len(chunks[0])/8,])
+	valid_set = (chunks[0][6*len(chunks[0])/8:7*len(chunks[0])/8,],
+				 chunks[1][6*len(chunks[0])/8:7*len(chunks[0])/8,])
+	test_set = (chunks[0][7*len(chunks[0])/8:,],
+				chunks[1][7*len(chunks[0])/8:,])
 	return train_set, valid_set, test_set
 
 

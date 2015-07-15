@@ -1,26 +1,56 @@
-import conv1d
+"""Testing nnet1d's convolutional neural network on QRI oil data"""
+
+from nnet1d import NNet1D
+
+# Build convolutional neural network with two convolutional layers and one
+# fully connected layer (activation function is rectified linear units)
+network = NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=25,
+                 learning_rate=0.01)
+network.add_conv_pool_layer(filters=100, filter_length=5, poolsize=4)
+network.add_conv_pool_layer(filters=100, filter_length=4, poolsize=5)
+network.add_fully_connected_layer()
+network.build()
+
+# Train neural network
+for epoch in xrange(150):
+    training_error, validation_error = network.train()
+    output = "Epoch %d: (training error = %f, validation error = %f)"
+    output %= (epoch + 1, training_error, validation_error)
+    print output
+
+# Test neural network
+print "Testing error = %f" % network.test_error()
+
+# Save model
+import gzip, cPickle
+with gzip.open("big_model.pkl.gz", "wb") as file:
+    file.write(cPickle.dumps(network))
+
+
+# DO PLOTTING
 import numpy as np
-import theano.tensor as T
+import matplotlib.pyplot as plt
 
-# Initialize random number generator
-rng = np.random.RandomState(42)
+predictions = network.output(network.test_set_x.get_value(borrow=True))
+for chunk in zip(network.test_set_x.get_value(borrow=True), network.test_set_y.get_value(borrow=True), predictions):
+    # Create a figure and add a subplot with labels
+    fig = plt.figure(1)
+    graph = fig.add_subplot(111)
+    fig.suptitle("Chunk Data", fontsize=25)
+    plt.xlabel("Year", fontsize=15)
+    plt.ylabel("Production", fontsize=15)
+    
+    # Plot the generated predictions as a blue line with round markers
+    graph.plot(np.append(chunk[0], chunk[2]), "b-o", label="Generated Output")
+    
+    # Plot the actual predictions as a green line with round markers
+    graph.plot(np.append(chunk[0], chunk[1]), "g-o", label="Actual Output")
 
-# Load data sets
-dataset_file = "../datasets/qri.pkl.gz"
-datasets = conv1d.load_data(dataset_file)
+    # Plot the data as a red line with round markers
+    graph.plot(chunk[0], "r-o", label="Oil Output")
 
-# Input and output
-x = T.matrix('x')
-y = T.matrix('y')
-
-# Make neural network
-batch_size = 50
-
-layer0 = conv1d.ConvPoolLayer(rng, x, input_length=36, batch_size=batch_size, filters=10, filter_length=5, poolsize=4)
-layer1 = conv1d.ConvPoolLayer(rng, layer0.output, input_number=layer0.output_shape[1], input_length=layer0.output_shape[3], batch_size=batch_size, filters=10, filter_length=4, poolsize=5)
-layer2 = conv1d.FullyConnectedLayer(rng, layer1.output.flatten(2), n_in=layer1.output_shape[1]*layer1.output_shape[3], n_out=12)
-network = conv1d.ConvNetwork(datasets, x, y, batch_size=batch_size, layers=[layer0, layer1, layer2], learning_rate=0.1)
-
-# Train and test neural network
-network.train(100)
-network.test()
+    # Add legend, resize windows, and display plot
+    plt.legend()
+    mng = plt.get_current_fig_manager()
+    mng.resize(*mng.window.maxsize())
+    plt.show()
