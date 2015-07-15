@@ -19,6 +19,8 @@ fully connected layers"""
 
 # WONKY STUFF: SAME ERROR FOR VALID AND TEST
 
+# IMPROVEMENTS: FROM THE SAME WELL, USING WATER/GAS DATA AS WELL
+
 import cPickle
 import gzip
 import numpy as np

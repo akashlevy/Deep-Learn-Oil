@@ -2,6 +2,7 @@
 
 from nnet1d import NNet1D
 
+'''
 # Build convolutional neural network with two convolutional layers and one
 # fully connected layer (activation function is rectified linear units)
 network = NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=25,
@@ -25,9 +26,15 @@ print "Testing error = %f" % network.test_error()
 import gzip, cPickle
 with gzip.open("big_model.pkl.gz", "wb") as file:
     file.write(cPickle.dumps(network))
+'''
+
+# Load model
+import gzip, cPickle
+with gzip.open("big_model.pkl.gz", "rb") as file:
+    network = cPickle.load(file)
 
 
-# DO PLOTTING
+# DO PLOTTING (ADD ERROR INTO CAPTION OR SOMETHING!!!!!)
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -37,7 +44,7 @@ for chunk in zip(network.test_set_x.get_value(borrow=True), network.test_set_y.g
     fig = plt.figure(1)
     graph = fig.add_subplot(111)
     fig.suptitle("Chunk Data", fontsize=25)
-    plt.xlabel("Year", fontsize=15)
+    plt.xlabel("Month", fontsize=15)
     plt.ylabel("Production", fontsize=15)
     
     # Plot the generated predictions as a blue line with round markers
