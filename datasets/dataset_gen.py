@@ -112,7 +112,6 @@ def preprocess_data(data):
 				x.append(oils[in_index:out_index])
 				y.append(oils[out_index:end_index])
 	
-	rnd.seed(SEED)
 	shuffled = list(zip(x, y))
 	rnd.shuffle(shuffled)
 	x, y = zip(*shuffled)
@@ -126,7 +125,7 @@ def plot_data(data):
 		fig = plt.figure(1)
 		graph = fig.add_subplot(111)
 		fig.suptitle(name, fontsize=25)
-		plt.xlabel("Year", fontsize=15)
+		plt.xlabel("Month", fontsize=15)
 		plt.ylabel("Production", fontsize=15)
 
 		# Plot the data as a red line with round markers
@@ -146,7 +145,7 @@ def plot_chunks(chunks):
 		fig = plt.figure(1)
 		graph = fig.add_subplot(111)
 		fig.suptitle("Chunk Data", fontsize=25)
-		plt.xlabel("Year", fontsize=15)
+		plt.xlabel("Month", fontsize=15)
 		plt.ylabel("Production", fontsize=15)
 		
 		# Plot the predictions as a green line with round markers
@@ -155,7 +154,7 @@ def plot_chunks(chunks):
 		# Plot the data as a red line with round markers
 		graph.plot(chunk[0], "r-o", label="Oil Output")
 
-		# Add legend, resize windows, and display plot
+		# Add legend and display plot
 		plt.legend()
 		plt.show()
 		
@@ -163,12 +162,12 @@ def plot_chunks(chunks):
 def generate_data_sets(chunks):
 	"""Generate the training, validation, testing sets by splitting the chunks
 	using 6:1:1 ratio"""
-	train_set = (chunks[0][::6*len(chunks)/8,],
-				 chunks[1][::6*len(chunks)/8,])
-	valid_set = (chunks[0][6*len(chunks)/8::7*len(chunks)/8,],
-				 chunks[1][6*len(chunks)/8::7*len(chunks)/8,])
-	test_set = (chunks[0][7*len(chunks)/8::,],
-				chunks[1][7*len(chunks)/8::,])
+	train_set = (chunks[0][:6*len(chunks[0])/8,],
+				 chunks[1][:6*len(chunks[0])/8,])
+	valid_set = (chunks[0][6*len(chunks[0])/8:7*len(chunks[0])/8,],
+				 chunks[1][6*len(chunks[0])/8:7*len(chunks[0])/8,])
+	test_set = (chunks[0][7*len(chunks[0])/8:,],
+				chunks[1][7*len(chunks[0])/8:,])
 	return train_set, valid_set, test_set
 
 
