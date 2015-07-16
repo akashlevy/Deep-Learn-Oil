@@ -1,6 +1,7 @@
 """ Vanilla RNN
 @author Graham Taylor
 """
+
 import numpy as np
 import theano
 import theano.tensor as T
@@ -18,7 +19,6 @@ plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
-
 
 class RNN(object):
     """    Recurrent neural network class

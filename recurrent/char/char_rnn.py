@@ -23,7 +23,7 @@ from theano import tensor as T
 logger = logging.getLogger(__name__)
 plt.ion()
 
-mode = theano.Mode(linker='py', optimizer='fast_compile')
+mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
 """
