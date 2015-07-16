@@ -124,6 +124,9 @@ class NNet1D(object):
         # Cost function is last layer's output cost
         self.cost = self.layers[-1].cost(self.y)
         
+        # Keep a count of the number of training steps
+        self.epochs = 0
+        
         # Index for batching
         i = T.lscalar()
         
@@ -158,10 +161,11 @@ class NNet1D(object):
         
         # Shared variables for output
         x = T.matrix()
-        givens = {self.x: x} #############FIX THIS#################
+        givens = {self.x: x}
+        output = self.layers[-1].output
         
         # Make Theano output function
-        self.output = theano.function([x], self.layers[-1].output, givens=givens)
+        self.output_function = theano.function([x], output, givens=givens)
 
     @staticmethod
     def load_data(filename):
@@ -193,6 +197,7 @@ class NNet1D(object):
     def train(self):
         """Apply one training step of the network and return average training
         and validation error"""
+        self.epochs += 1
         train_errors = [self.train_model(i)
                         for i in xrange(self.n_train_batches)]
         valid_errors = [self.validate_model(i)
@@ -203,3 +208,17 @@ class NNet1D(object):
         """Return average test error from the network"""
         test_errors = [self.test_model(i) for i in range(self.n_test_batches)]
         return np.mean(test_errors)
+    
+    def output(self, x):
+        """Return output from an input to the network"""
+        # Copy x to own its data
+        x = np.copy(x)
+        
+        # Store x's initial size
+        x_size = x.shape[0]
+        
+        # Resize x
+        x.resize(self.batch_size, self.n_in)
+        
+        # Return the output in x's initial size
+        return self.output_function(x)[:x_size]
