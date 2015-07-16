@@ -78,8 +78,6 @@ for name in data:
 	# Plot the smoothed data as a green line with round markers
 	graph.plot(dates, oils, "g-o", label="Smoothed Oil Production")
 	
-	# Add legend, resize windows for Tkinter and display plot
+	# Add legend and display plot
 	plt.legend()
-	mng = plt.get_current_fig_manager()
-	mng.resize(*mng.window.maxsize())
 	plt.show()
