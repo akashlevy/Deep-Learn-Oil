@@ -185,5 +185,5 @@ if __name__ == '__main__':
 	print "Done!"
 	# print "Plotting data..."
 	# plot_data(data)
-	# print "Plotting chunks..."
-	# plot_chunks(chunks)
+	print "Plotting chunks..."
+	plot_chunks(chunks)
