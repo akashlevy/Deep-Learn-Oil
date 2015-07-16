@@ -341,8 +341,6 @@ def test_dA_sanity(learning_rate=0.001, training_epochs=500,
     print >> sys.stderr, ('The code for file ' +
                           os.path.split(__file__)[1] +
                           ' ran for %.2fm' % ((training_time) / 60.))
-
-    print da.get_reconstructed_input(da.get_hidden_values(da.get_corrupted_input(x, 0.3)))
     
     
 def test_dA(learning_rate=0.1, training_epochs=15,
