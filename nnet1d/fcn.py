@@ -5,7 +5,7 @@ import theano.tensor as T
 import matplotlib.pyplot as plt
 from nnet1d import NNet1D
 from nnet_functions import relu, abs_error_cost
-
+'''
 # List of models
 models = []
 
@@ -34,23 +34,25 @@ for model in models:
 import gzip, cPickle
 with gzip.open("models/fcn_model.pkl.gz", "wb") as file:
     file.write(cPickle.dumps(models))
-
+'''
 # Load model
 import gzip, cPickle
 with gzip.open("models/fcn_model.pkl.gz", "rb") as file:
     models = cPickle.load(file)
-    
+
 # Load test data and make prediction
 x = models[-1].test_set_x.get_value()
 y = models[-1].test_set_y.get_value()
 prediction = models[-1].output(x)
 
+i=0
 for chunk in zip(x, y, prediction):
     # Create a figure and add a subplot with labels
-    fig = plt.figure(1)
+    fig = plt.figure(i)
     graph = fig.add_subplot(111)
     fig.suptitle("Chunk Data", fontsize=25)
-    plt.title("Abs Error: %f" % abs_error_cost(chunk[1], chunk[2]).eval())
+    mean_abs_error = abs_error_cost(chunk[1], chunk[2]).eval()
+    plt.title("Mean Abs Error: %f" % mean_abs_error, fontsize=10)
     plt.xlabel("Month", fontsize=15)
     plt.ylabel("Production", fontsize=15)
     
@@ -64,5 +66,6 @@ for chunk in zip(x, y, prediction):
     graph.plot(chunk[0], "r-o", label="Oil Output")
 
     # Add legend and display plot
-    plt.legend()
-    plt.show()
+    plt.legend(loc="upper left")
+    plt.savefig("images/graph%s.png"%i)
+    i+=1
