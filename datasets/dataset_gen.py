@@ -65,10 +65,6 @@ def get_data():
 
 def preprocess_data(data):
     """Returns preprocessed version of the data"""
-<<<<<<< HEAD
-=======
-    new_data = {}
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
     x = []
     y = []
     for name in data:
@@ -78,41 +74,15 @@ def preprocess_data(data):
         else:
             oils = np.array(data[name])
             
-<<<<<<< HEAD
-=======
-        # Skip data set unless standard deviation is non-zero
-        if np.std(oils) == 0:
-            continue
-
-        # Remove outliers
-        if REMOVE_OUTLIERS:
-            oils = oils[abs(oils - np.mean(oils)) <= OUTLIER_Z*np.std(oils)]
-            
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
         # Smooth data
         if SMOOTH_DATA:
             smooth_window = np.ones(SMOOTH_LEN)/SMOOTH_LEN
             oils = np.convolve(smooth_window, oils, mode="valid")
         
-<<<<<<< HEAD
-=======
-        # Skip data set unless standard deviation is not 0
-        if np.std(oils) == 0:
-            continue
-        
-        # Normalize data
-        if NORMALIZE_DATA:
-            oils = (oils - np.mean(oils))/np.std(oils)
-        
-        # Add to new data dictionary
-        new_data[name] = oils
-        
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
         # Make chunks
         for i in xrange(0, len(oils), STEP_MONTHS):
             in_index = i
             out_index = i + IN_MONTHS
-<<<<<<< HEAD
             end_index = i + IN_MONTHS + OUT_MONTHS
             if end_index < len(oils):
                 chunk = oils[in_index:end_index]
@@ -136,37 +106,6 @@ def preprocess_data(data):
     x, y = zip(*shuffled)
     
     return np.array(x), np.array(y)
-=======
-            end_index = i + MIN_MONTHS
-            if end_index < len(oils):
-                x.append(oils[in_index:out_index])
-                y.append(oils[out_index:end_index])
-    
-    shuffled = list(zip(x, y))
-    rnd.shuffle(shuffled)
-    x, y = zip(*shuffled)
-    return new_data, (np.array(x), np.array(y))
-
-
-def plot_data(data):
-    """Plots the data using pyplot"""
-    for name in data:
-        # Create a figure and add a subplot with labels
-        fig = plt.figure(1)
-        graph = fig.add_subplot(111)
-        fig.suptitle(name, fontsize=25)
-        plt.xlabel("Month", fontsize=15)
-        plt.ylabel("Production", fontsize=15)
-
-        # Plot the data as a red line with round markers
-        graph.plot(data[name], "r-o", label="Oil Production")
-
-        # Add legend, resize windows, and display plot
-        plt.legend()
-        mng = plt.get_current_fig_manager()
-        mng.resize(*mng.window.maxsize())
-        plt.show()
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
 
 
 def plot_chunks(chunks):
@@ -200,7 +139,6 @@ def generate_data_sets(chunks):
     test_set = (chunks[0][7*len(chunks[0])/8:,],
                 chunks[1][7*len(chunks[0])/8:,])
     return train_set, valid_set, test_set
-<<<<<<< HEAD
 
    
 def load_data(seed, remove_zeros, smooth_data, normalize_data, smooth_len):
@@ -211,8 +149,6 @@ def load_data(seed, remove_zeros, smooth_data, normalize_data, smooth_len):
     NORMALIZE_DATA = normalize_data
     SMOOTH_LEN = smooth_len
     return generate_data_sets(preprocess_data(get_data()))
-=======
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
 
 
 if __name__ == '__main__':
@@ -220,21 +156,12 @@ if __name__ == '__main__':
     print "Getting data..."
     data = get_data()
     print "Preprocessing data..."
-<<<<<<< HEAD
     chunks = preprocess_data(data)
-=======
-    data, chunks = preprocess_data(data)
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
     print "Generating data sets..."
     data_sets = generate_data_sets(chunks)
     print "Writing data sets to qri.pkl.gz..."
     with gzip.open("qri.pkl.gz", "wb") as file:
         file.write(cPickle.dumps(data_sets))
     print "Done!"
-<<<<<<< HEAD
-=======
-    # print "Plotting data..."
-    # plot_data(data)
->>>>>>> 1b046e24cef53149a6df73eba193f16d4d420a46
     print "Plotting chunks..."
     plot_chunks(chunks)
