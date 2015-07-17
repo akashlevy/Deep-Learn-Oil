@@ -11,8 +11,8 @@ from nnet_functions import relu, sqr_error_cost
 class ConvPoolLayer(object):
     """Convolutional layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, batch_size, filters,
-                 filter_length, input_number=1, poolsize=1,
-                 activation_function=relu, W_bound=0.1):
+                 filter_length, input_number=1, poolsize=1, activ_fn=relu,
+                 W_bound=0.1):
         """Initialize layer"""
         # Make sure that convolution output is evenly divisible by poolsize
         assert (input_length - filter_length + 1) % poolsize == 0
@@ -25,7 +25,7 @@ class ConvPoolLayer(object):
         
         # Store poolsize and activation function
         self.poolsize = poolsize
-        self.activation_function = activation_function
+        self.activ_fn = activ_fn
         
         # Reshape input to input size and store
         self.input = input.reshape(self.input_shape)
@@ -48,7 +48,7 @@ class ConvPoolLayer(object):
         
         # Store output
         bias = self.b.dimshuffle('x', 0, 'x', 'x')
-        self.output = self.activation_function(pooled_out + bias)
+        self.output = self.activ_fn(pooled_out + bias)
 
         # Store parameters of this layer
         self.params = [self.W, self.b]
@@ -57,8 +57,7 @@ class ConvPoolLayer(object):
 class FullyConnectedLayer(object):
     """Fully connected layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, output_length, batch_size,
-                 cost_function=sqr_error_cost,
-                 activation_function=None, W_bound=0.1):
+                 cost_fn=sqr_error_cost, activ_fn=None, W_bound=0.1):
         """Initialize fully connected layer"""
         # Determine input and output tensor sizes
         self.input_shape = (batch_size, input_length)
@@ -66,7 +65,7 @@ class FullyConnectedLayer(object):
         
         # Store input and cost function
         self.input = input
-        self.cost_function = cost_function
+        self.cost_fn = cost_fn
         
         # Model parameters (weights and biases)'
         weight_size = (input_length, output_length)
@@ -78,10 +77,10 @@ class FullyConnectedLayer(object):
         
         # Store output and params of this layer
         self.output = T.dot(input, self.W) + self.b
-        if activation_function is not None:
-            self.output = activation_function(self.output)
+        if activ_fn is not None:
+            self.output = activ_fn(self.output)
         self.params = [self.W, self.b]
 
     def cost(self, y):
         """Return the cost associated with the output"""
-        return self.cost_function(y, self.output)
+        return self.cost_fn(y, self.output)

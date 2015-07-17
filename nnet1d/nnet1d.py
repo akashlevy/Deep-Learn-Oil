@@ -7,6 +7,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 from layers1d import ConvPoolLayer, FullyConnectedLayer
+from nnet_functions import abs_error_cost, relu
 
 
 # Configure floating point numbers for Theano
@@ -15,13 +16,18 @@ theano.config.floatX = "float32"
 
 class NNet1D(object):
     """A neural network implemented for 1D neural networks in Theano"""
-    def __init__(self, seed, datafile, batch_size, learning_rate):
+    def __init__(self, seed, datafile, batch_size, learning_rate, momentum,
+                 cost_fn=relu):
         """Initialize network: seed the random number generator, load the
         datasets, and store model parameters"""
-        # Store random number generator, batch size, and learning rate
+        # Store random number generator, batch size, learning rate and momentum
         self.rng = np.random.RandomState(seed)
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.momentum = momentum
+        
+        # Store cost function
+        self.cost_fn = cost_fn
         
         # Initialize layers in the neural network
         self.layers = []
@@ -48,7 +54,7 @@ class NNet1D(object):
         self.n_test_batches = self.test_set_x.get_value(borrow=True).shape[0]
         self.n_test_batches /= batch_size
         
-    def add_conv_pool_layer(self, filters, filter_length, poolsize):
+    def add_conv_pool_layer(self, filters, filter_length, poolsize, activ_fn=relu):
         """Add a convolutional layer to the network"""
         # If first layer, use x as input
         if len(self.layers) == 0:
@@ -73,16 +79,12 @@ class NNet1D(object):
             raise TypeError("Invalid previous layer")
             
         # Add the layer
-        self.layers.append(ConvPoolLayer(rng=self.rng,
-                                         input=input,
-                                         input_number=input_number,
-                                         input_length=input_length,
-                                         batch_size=self.batch_size,
-                                         filters=filters,
-                                         filter_length=filter_length,
-                                         poolsize=poolsize))
+        layer = ConvPoolLayer(self.rng, input, input_length, batch_size,
+                              filters, filter_length, input_number, poolsize,
+                              activ_fn)
+        self.layers.append(layer)
         
-    def add_fully_connected_layer(self, output_length=None):
+    def add_fully_connected_layer(self, output_length=None, activ_fn=None):
         """Add a fully connected layer to the network"""
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -109,11 +111,10 @@ class NNet1D(object):
             raise TypeError("Invalid previous layer")
             
         # Add the layer
-        self.layers.append(FullyConnectedLayer(rng=self.rng,
-                                               input=input,
-                                               input_length=input_length,
-                                               output_length=output_length,
-                                               batch_size=self.batch_size))
+        layer = FullyConnectedLayer(self.rng, input, input_length,
+                                    output_length, self.batch_size,
+                                    self.cost_fn, activ_fn)
+        self.layers.append(layer)
     
     def build(self):
         """Build the neural network from the given layers"""
@@ -137,9 +138,7 @@ class NNet1D(object):
         
         # Stochastic gradient descent algorithm for training function
         params = [param for layer in self.layers for param in layer.params]
-        grads = T.grad(self.cost, params)
-        updates = [(param_i, param_i - self.learning_rate * grad_i)
-                   for param_i, grad_i in zip(params, grads)]
+        updates = self.gradient_updates_momentum(params)
         
         # Make Theano training function
         self.train_model = theano.function([i], self.cost, updates=updates,
@@ -193,6 +192,12 @@ class NNet1D(object):
         # Return the resulting shared variables
         return [shared_dataset(train_set), shared_dataset(valid_set),
                 shared_dataset(test_set)]
+        
+    def print_computational_graph(self, outfile, format="svg"):
+        """Print computational graph for producing output to filename in
+        specified format"""
+        return theano.printing.pydotprint(self.output_function, format=format,
+                                          outfile=outfile)
 
     def train(self):
         """Apply one training step of the network and return average training
@@ -208,6 +213,24 @@ class NNet1D(object):
         """Return average test error from the network"""
         test_errors = [self.test_model(i) for i in range(self.n_test_batches)]
         return np.mean(test_errors)
+    
+    def gradient_updates_momentum(self, params):
+        """Return the updates necessary to implement momentum"""
+        updates = []
+        for param in params:
+            # Update parameter
+            param_update = theano.shared(param.get_value()*0.,
+                                         broadcastable=param.broadcastable)
+            updates.append((param, param - self.learning_rate*param_update))
+            
+            # Store gradient with exponential decay
+            grad = T.grad(self.cost, param)
+            updates.append((param_update,
+                            self.momentum*param_update +
+                            (1 - self.momentum)*grad))
+            
+        # Return the updates
+        return updates
     
     def output(self, x):
         """Return output from an input to the network"""
