@@ -63,27 +63,3 @@ for epoch in xrange(1, n_epochs):
 
     if done_looping:
         break
-
-
-
-
-
-
-
-
-
-
-
-
-class NeuralNet(object):
-    """Class for a neural network"""
-    def __init__(self, input, batch_size, output_size):
-        """Initialize the neural network"""
-        
-        # Initialize with 0 the weights W as a matrix of shape (batch_size, output_size)
-        self.W = theano.shared(value=numpy.zeros((n_in, n_out), dtype=theano.config.floatX),
-                               name='W', borrow=True)
-        
-        # Initialize the biases b as a vector of output_size 0s
-        self.b = theano.shared(value=numpy.zeros((n_out,), dtype=theano.config.floatX),
-                               name='b', borrow=True)

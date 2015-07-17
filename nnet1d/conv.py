@@ -10,7 +10,7 @@ models = []
 
 # Convolutional model 1
 models.append(NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=50,
-                     learning_rate=0.01))
+                     learning_rate=0.01, momentum=0.5, cost_fn=sqr_error_cost))
 models[-1].add_conv_pool_layer(filters=100, filter_length=5, poolsize=4)
 models[-1].add_conv_pool_layer(filters=100, filter_length=4, poolsize=5)
 models[-1].add_fully_connected_layer()
@@ -18,7 +18,7 @@ models[-1].build()
 
 # Convolutional model 2
 models.append(NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=50,
-                     learning_rate=0.01))
+                     learning_rate=0.01, momentum=0.5, cost_fn=sqr_error_cost))
 models[-1].add_conv_pool_layer(filters=100, filter_length=7, poolsize=5)
 models[-1].add_conv_pool_layer(filters=100, filter_length=4, poolsize=3)
 models[-1].add_fully_connected_layer()
@@ -26,7 +26,7 @@ models[-1].build()
 
 # Convolutional model 3
 models.append(NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=50,
-                     learning_rate=0.01))
+                     learning_rate=0.01, momentum=0.5, cost_fn=sqr_error_cost))
 models[-1].add_conv_pool_layer(filters=100, filter_length=9, poolsize=7)
 models[-1].add_conv_pool_layer(filters=100, filter_length=2, poolsize=3)
 models[-1].add_fully_connected_layer()
@@ -34,7 +34,7 @@ models[-1].build()
 
 # Convolutional model 4
 models.append(NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=50,
-                     learning_rate=0.01))
+                     learning_rate=0.01, momentum=0.5, cost_fn=sqr_error_cost))
 models[-1].add_conv_pool_layer(filters=100, filter_length=9, poolsize=4)
 models[-1].add_conv_pool_layer(filters=100, filter_length=4, poolsize=5)
 models[-1].add_fully_connected_layer()
@@ -53,7 +53,7 @@ for model in models:
     
 # Save models
 import gzip, cPickle
-with gzip.open("theano_model.pkl.gz", "wb") as file:
+with gzip.open("models/theano_model.pkl.gz", "wb") as file:
     file.write(cPickle.dumps(models))
 
 '''
