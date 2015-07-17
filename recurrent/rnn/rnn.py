@@ -1,33 +1,27 @@
-# code from https://github.com/gwtaylor/theano-rnn/
-
-"""
-Vanilla RNN on MNIST dataset
-author of Vanilla RNN: Graham Taylor
-edited by Michelle (Ruomeng) Yang
+""" Vanilla RNN
+@author Graham Taylor
 """
 
-import cPickle as pickle
-import datetime
-import gzip
-import logging
-import matplotlib.pyplot as plt
 import numpy as np
-import os
 import theano
-import time
-
+import theano.tensor as T
 from sklearn.base import BaseEstimator
-from theano import tensor as T
+import logging
+import time
+import os
+import datetime
+import cPickle as pickle
 
 logger = logging.getLogger(__name__)
+
+import matplotlib.pyplot as plt
 plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
 class RNN(object):
-    """
-    Recurrent neural network class
+    """    Recurrent neural network class
     Supported output types:
     real : linear output units, use mean-squared error
     binary : binary output units, use cross-entropy error
@@ -81,7 +75,7 @@ class RNN(object):
         self.params = [self.W, self.W_in, self.W_out, self.h0,
                        self.bh, self.by]
 
-        # for every parameter, we maintain its last update
+        # for every parameter, we maintain it's last update
         # the idea here is to use "momentum"
         # keep moving mostly in the same direction
         self.updates = {}
@@ -256,32 +250,20 @@ class MetaRNN(BaseEstimator):
         else:
             raise NotImplementedError
 
-    def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
+    def shared_dataset(self, data_xy):
+        """ Load the dataset into shared variables """
 
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
         data_x, data_y = data_xy
-        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX), borrow=borrow)
-        shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX), borrow=borrow)
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_y`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesn't make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets us get around this issue
+        shared_x = theano.shared(np.asarray(data_x,
+                                            dtype=theano.config.floatX))
 
-        # if self.output_type in ('binary', 'softmax'):
-        #     return shared_x, T.cast(shared_y, 'int32')
-        # else:
-        #     return shared_x, shared_y
+        shared_y = theano.shared(np.asarray(data_y,
+                                            dtype=theano.config.floatX))
 
-        return shared_x, T.cast(shared_y, 'int32')
+        if self.output_type in ('binary', 'softmax'):
+            return shared_x, T.cast(shared_y, 'int32')
+        else:
+            return shared_x, shared_y
 
     def __getstate__(self):
         """ Return state sequence."""
@@ -459,6 +441,7 @@ class MetaRNN(BaseEstimator):
 
             self.learning_rate *= self.learning_rate_decay
 
+
 def test_real():
     """ Test RNN with real-valued outputs. """
     n_hidden = 10
@@ -498,6 +481,7 @@ def test_real():
     for i, x in enumerate(guessed_targets):
         x.set_color(true_targets[i].get_color())
     ax2.set_title('solid: true output, dashed: model output')
+
 
 def test_binary(multiple_out=False, n_epochs=250):
     """ Test RNN with binary outputs. """
@@ -605,8 +589,8 @@ def test_softmax(n_epochs=250):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real()
+    # test_real()
     # problem takes more epochs to solve
     #test_binary(multiple_out=True, n_epochs=2400)
-    #test_softmax(n_epochs=250)
+    test_softmax(n_epochs=250)
     print "Elapsed time: %f" % (time.time() - t0)
