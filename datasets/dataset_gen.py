@@ -14,16 +14,23 @@ DATA_DIRECTORY = "../data"
 # Splitting data
 IN_MONTHS = 36
 OUT_MONTHS = 12
-STEP_MONTHS = 24
+STEP_MONTHS = 1
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
 SMOOTH_DATA = False
 NORMALIZE_DATA = True
-
 SMOOTH_LEN = 4
+
+# Random seed
 SEED = 42
 
+# Dataset assignment
+DIFFERENT_WELLS = True
+DIFFERENT_SITES = False
+TRAIN_SITES = ["BEAP", "BEAT", "BEDE", "BEZE", "EUAP"]
+VALID_SITES = ["EUAT"]
+TEST_SITES = ["EUZE"]
 
 def get_data():
     """Returns dictionary containing data from files in data directory"""
@@ -48,13 +55,13 @@ def get_data():
             # Add each row to the corresponding oil well
             for row in reader:
                 # Get data from cells and convert appropriately
-                name = row[3]
+                well_name = row[3]
                 oil = float(row[4])
 
                 # Add data to the dictionary
-                if not name in data:
-                    data[name] = []
-                data[name].append(oil)
+                if not well_name in data:
+                    data[well_name] = []
+                data[well_name].append(oil)
 
     # Go back to start directory
     os.chdir(startdir)
@@ -65,14 +72,20 @@ def get_data():
 
 def preprocess_data(data):
     """Returns preprocessed version of the data"""
-    x = []
-    y = []
-    for name in data:
+    train_x = []
+    train_y = [] 
+    valid_x = []
+    valid_y = []
+    test_x = []
+    test_y = []
+    well_names = data.keys()
+    rnd.shuffle(well_names)
+    for well_index, well_name in enumerate(well_names):
         # Remove zeroed data points (push points together)
         if REMOVE_ZEROS:
-            oils = np.array(filter(lambda oil: oil != 0, data[name]))
+            oils = np.array(filter(lambda oil: oil != 0, data[well_name]))
         else:
-            oils = np.array(data[name])
+            oils = np.array(data[well_name])
             
         # Smooth data
         if SMOOTH_DATA:
@@ -89,56 +102,66 @@ def preprocess_data(data):
                 chunk_x = oils[in_index:out_index]
                 chunk_y = oils[out_index:end_index]
                 
-                # Skip chunk unless standard deviation is not 0
-                if np.std(chunk) != 0:
-                    # Normalize data
-                    if NORMALIZE_DATA:
-                        chunk_x = (chunk_x - np.mean(chunk))/np.std(chunk)
-                        chunk_y = (chunk_y - np.mean(chunk))/np.std(chunk)
+                # Normalize data (skip chunk if standard deviation is 0)
+                if NORMALIZE_DATA and np.std(chunk) != 0:
+                    chunk_x = (chunk_x - np.mean(chunk))/np.std(chunk)
+                    chunk_y = (chunk_y - np.mean(chunk))/np.std(chunk)
+                
+                # Add chunk
+                if DIFFERENT_SITES:
+                    # Assign to dataset based on site name
+                    if name[:4] in TRAIN_SITES:
+                        train_x.append(chunk_x)
+                        train_y.append(chunk_y)
+                    elif name[:4] in VALID_SITES:
+                        valid_x.append(chunk_x)
+                        valid_y.append(chunk_y)
+                    elif name[:4] in TEST_SITES:
+                        test_x.append(chunk_x)
+                        test_y.append(chunk_y)
+                    else:
+                        print "Error: site %s not classified" % name
+                elif DIFFERENT_WELLS:
+                    # Assign to dataset based on well index
+                    if well_index < len(data)*6/8:
+                        train_x.append(chunk_x)
+                        train_y.append(chunk_y)
+                    elif well_index < len(data)*7/8:
+                        valid_x.append(chunk_x)
+                        valid_y.append(chunk_y)
+                    else:
+                        test_x.append(chunk_x)
+                        test_y.append(chunk_y)
+                else:
+                    print "Error: choose a dataset assignment option"
                     
-                    # Add chunk
-                    x.append(chunk_x)
-                    y.append(chunk_y)
+    train_set = (np.array(train_x), np.array(train_y))
+    valid_set = (np.array(valid_x), np.array(valid_y))
+    test_set = (np.array(test_x), np.array(test_y))
     
-    # Shuffle the data
-    shuffled = list(zip(x, y))
-    rnd.shuffle(shuffled)
-    x, y = zip(*shuffled)
-    
-    return np.array(x), np.array(y)
-
-
-def plot_chunks(chunks):
-    """Plots the chunks using pyplot"""
-    for chunk in zip(chunks[0], chunks[1]):
-        # Create a figure and add a subplot with labels
-        fig = plt.figure(1)
-        graph = fig.add_subplot(111)
-        fig.suptitle("Chunk Data", fontsize=25)
-        plt.xlabel("Month", fontsize=15)
-        plt.ylabel("Production", fontsize=15)
-        
-        # Plot the predictions as a green line with round markers
-        graph.plot(np.append(chunk[0], chunk[1]), "g-o", label="Predicted Output")
-
-        # Plot the data as a red line with round markers
-        graph.plot(chunk[0], "r-o", label="Oil Output")
-
-        # Add legend and display plot
-        plt.legend()
-        plt.show()
-        
-        
-def generate_data_sets(chunks):
-    """Generate the training, validation, testing sets by splitting the chunks
-    using 6:1:1 ratio"""
-    train_set = (chunks[0][:6*len(chunks[0])/8,],
-                 chunks[1][:6*len(chunks[0])/8,])
-    valid_set = (chunks[0][6*len(chunks[0])/8:7*len(chunks[0])/8,],
-                 chunks[1][6*len(chunks[0])/8:7*len(chunks[0])/8,])
-    test_set = (chunks[0][7*len(chunks[0])/8:,],
-                chunks[1][7*len(chunks[0])/8:,])
     return train_set, valid_set, test_set
+
+
+def plot_chunks(datasets):
+    """Plots the datasets' chunks using pyplot"""
+    for dataset in datasets:
+        for chunk in zip(dataset[0], dataset[1]):
+            # Create a figure and add a subplot with labels
+            fig = plt.figure(1)
+            graph = fig.add_subplot(111)
+            fig.suptitle("Chunk Data", fontsize=25)
+            plt.xlabel("Month", fontsize=15)
+            plt.ylabel("Production", fontsize=15)
+            
+            # Plot the predictions as a green line with round markers
+            graph.plot(np.append(chunk[0], chunk[1]), "g-o", label="Predicted Output")
+    
+            # Plot the data as a red line with round markers
+            graph.plot(chunk[0], "r-o", label="Oil Output")
+    
+            # Add legend and display plot
+            plt.legend()
+            plt.show()
 
    
 def load_data(seed, remove_zeros, smooth_data, normalize_data, smooth_len):
@@ -156,12 +179,10 @@ if __name__ == '__main__':
     print "Getting data..."
     data = get_data()
     print "Preprocessing data..."
-    chunks = preprocess_data(data)
-    print "Generating data sets..."
-    data_sets = generate_data_sets(chunks)
-    print "Writing data sets to qri.pkl.gz..."
+    datasets = preprocess_data(data)
+    print "Writing datasets to qri.pkl.gz..."
     with gzip.open("qri.pkl.gz", "wb") as file:
-        file.write(cPickle.dumps(data_sets))
+        file.write(cPickle.dumps(datasets))
     print "Done!"
     print "Plotting chunks..."
-    plot_chunks(chunks)
+    plot_chunks(datasets)
