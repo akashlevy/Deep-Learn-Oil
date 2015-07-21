@@ -1,13 +1,12 @@
 """
 LSTM
  - code from deeplearning.net
+ - see imbd.py: http://deeplearning.net/tutorial/code/imdb.py
+ - see lstm.py: http://deeplearning.net/tutorial/code/lstm.py
  - edited by Michelle (Ruomeng) Yang
 """
 
-import cPickle as pickle
-import datetime
-import logging
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -15,15 +14,13 @@ import theano
 import time
 
 from collections import OrderedDict
-from sklearn.base import BaseEstimator
 from theano import config
 from theano import tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 import process_data
 
-logger = logging.getLogger(__name__)
-plt.ion()
+# plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
@@ -433,7 +430,7 @@ def train_lstm(
     dispFreq=10,  # Display to stdout the training progress every N updates
     decay_c=0.,  # Weight decay for the classifier applied to the U weights.
     lrate=0.001,  # Learning rate for sgd (not used for adadelta and rmsprop)
-    optimizer=adadelta,  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
+    optimizer=rmsprop,  # sgd, adadelta and rmsprop available, sgd needs momentum and decaying learning rate
     encoder='lstm',  # TODO: can be removed must be lstm.
     saveto='lstm_model.npz',  # The best model will be saved there
     validFreq=370,  # Compute the validation error after this number of update.
