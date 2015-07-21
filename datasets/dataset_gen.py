@@ -1,4 +1,5 @@
 """Provides methods for obtaining, viewing, splitting oil production data"""
+
 import csv
 import cPickle
 import gzip
@@ -13,19 +14,14 @@ DATA_DIRECTORY = "../data"
 # Splitting data
 IN_MONTHS = 36
 OUT_MONTHS = 12
-MIN_MONTHS = IN_MONTHS + OUT_MONTHS
 STEP_MONTHS = 24
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
-REMOVE_OUTLIERS = True
 SMOOTH_DATA = False
 NORMALIZE_DATA = True
 
-OUTLIER_Z = 4
-SMOOTH_LEN = 3
-
-# Random seed
+SMOOTH_LEN = 4
 SEED = 42
 
 
@@ -69,7 +65,6 @@ def get_data():
 
 def preprocess_data(data):
     """Returns preprocessed version of the data"""
-    new_data = {}
     x = []
     y = []
     for name in data:
@@ -79,63 +74,38 @@ def preprocess_data(data):
         else:
             oils = np.array(data[name])
             
-        # Skip data set unless standard deviation is non-zero
-        if np.std(oils) == 0:
-            continue
-
-        # Remove outliers
-        if REMOVE_OUTLIERS:
-            oils = oils[abs(oils - np.mean(oils)) <= OUTLIER_Z*np.std(oils)]
-            
         # Smooth data
         if SMOOTH_DATA:
             smooth_window = np.ones(SMOOTH_LEN)/SMOOTH_LEN
             oils = np.convolve(smooth_window, oils, mode="valid")
         
-        # Skip data set unless standard deviation is not 0
-        if np.std(oils) == 0:
-            continue
-        
-        # Normalize data
-        if NORMALIZE_DATA:
-            oils = (oils - np.mean(oils))/np.std(oils)
-        
-        # Add to new data dictionary
-        new_data[name] = oils
-        
         # Make chunks
         for i in xrange(0, len(oils), STEP_MONTHS):
             in_index = i
             out_index = i + IN_MONTHS
-            end_index = i + MIN_MONTHS
+            end_index = i + IN_MONTHS + OUT_MONTHS
             if end_index < len(oils):
-                x.append(oils[in_index:out_index])
-                y.append(oils[out_index:end_index])
+                chunk = oils[in_index:end_index]
+                chunk_x = oils[in_index:out_index]
+                chunk_y = oils[out_index:end_index]
+                
+                # Skip chunk unless standard deviation is not 0
+                if np.std(chunk) != 0:
+                    # Normalize data
+                    if NORMALIZE_DATA:
+                        chunk_x = (chunk_x - np.mean(chunk))/np.std(chunk)
+                        chunk_y = (chunk_y - np.mean(chunk))/np.std(chunk)
+                    
+                    # Add chunk
+                    x.append(chunk_x)
+                    y.append(chunk_y)
     
+    # Shuffle the data
     shuffled = list(zip(x, y))
     rnd.shuffle(shuffled)
     x, y = zip(*shuffled)
-    return new_data, (np.array(x), np.array(y))
-
-
-def plot_data(data):
-    """Plots the data using pyplot"""
-    for name in data:
-        # Create a figure and add a subplot with labels
-        fig = plt.figure(1)
-        graph = fig.add_subplot(111)
-        fig.suptitle(name, fontsize=25)
-        plt.xlabel("Month", fontsize=15)
-        plt.ylabel("Production", fontsize=15)
-
-        # Plot the data as a red line with round markers
-        graph.plot(data[name], "r-o", label="Oil Production")
-
-        # Add legend, resize windows, and display plot
-        plt.legend()
-        mng = plt.get_current_fig_manager()
-        mng.resize(*mng.window.maxsize())
-        plt.show()
+    
+    return np.array(x), np.array(y)
 
 
 def plot_chunks(chunks):
@@ -170,20 +140,28 @@ def generate_data_sets(chunks):
                 chunks[1][7*len(chunks[0])/8:,])
     return train_set, valid_set, test_set
 
+   
+def load_data(seed, remove_zeros, smooth_data, normalize_data, smooth_len):
+    """Return datasets: allows this function to be called from other modules"""
+    rnd.seed(SEED)
+    REMOVE_ZEROS = remove_zeros
+    SMOOTH_DATA = smooth_data
+    NORMALIZE_DATA = normalize_data
+    SMOOTH_LEN = smooth_len
+    return generate_data_sets(preprocess_data(get_data()))
+
 
 if __name__ == '__main__':
     rnd.seed(SEED)
     print "Getting data..."
     data = get_data()
     print "Preprocessing data..."
-    data, chunks = preprocess_data(data)
+    chunks = preprocess_data(data)
     print "Generating data sets..."
     data_sets = generate_data_sets(chunks)
     print "Writing data sets to qri.pkl.gz..."
     with gzip.open("qri.pkl.gz", "wb") as file:
         file.write(cPickle.dumps(data_sets))
     print "Done!"
-    # print "Plotting data..."
-    # plot_data(data)
     print "Plotting chunks..."
     plot_chunks(chunks)
