@@ -1,43 +1,71 @@
 """Testing nnet1d's convolutional neural network on QRI oil data"""
 
+import copy
+import matplotlib.pyplot as plt
 import numpy as np
 import theano.tensor as T
-import matplotlib.pyplot as plt
 from nnet1d import NNet1D
 from nnet_functions import relu, abs_error_cost
-'''
+
 # List of models
 models = []
 
 # Fully connected model 1
-models.append(NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=273,
-                     learning_rate=0.01, momentum=0.5, cost_fn=abs_error_cost))
-models[-1].add_fully_connected_layer(output_length=300, activ_fn=T.tanh)
-models[-1].add_fully_connected_layer(output_length=300, activ_fn=T.tanh)
-models[-1].add_fully_connected_layer(output_length=300, activ_fn=T.tanh)
-models[-1].add_fully_connected_layer(output_length=300, activ_fn=T.tanh)
+models.append(NNet1D(datafile="../datasets/qri.pkl.gz", seed=42, batch_size=300,
+                     learning_rate=0.01, momentum=0, cost_fn=abs_error_cost))
+# models[-1].add_fully_connected_layer(output_length=32, activ_fn=T.tanh)
+# models[-1].add_fully_connected_layer(output_length=28, activ_fn=T.tanh)
+# models[-1].add_fully_connected_layer(output_length=24, activ_fn=T.tanh)
+# models[-1].add_fully_connected_layer(output_length=20, activ_fn=T.tanh)
+# models[-1].add_fully_connected_layer(output_length=16, activ_fn=T.tanh)
 models[-1].add_fully_connected_layer()
 models[-1].build()
 
+# Early stopping parameters
+patience = 15
+min_epochs = 100
+max_epochs = 50000
+
+# Train models
 for model in models:
-    # Train neural network
-    for epoch in xrange(500):
+    # Early stopping bests
+    best_model = None
+    best_validation_error = np.inf
+    best_validation_index = 0
+    
+    # Train model
+    for index in xrange(max_epochs):
         training_error, validation_error = model.train()
-        output = "(%f, %f, %f)"
-        output %= (epoch + 1, training_error, validation_error)
-        print output
+        
+        # Only check bests if past min_epochs
+        if index > min_epochs:
+            # If lower validation error, record new best
+            if validation_error < best_validation_error:
+                best_model = copy.deepcopy(model)
+                best_validation_error = validation_error
+                best_validation_index = index
+                
+            # If patience exceeded, done training
+            if best_validation_index + patience < index:
+                break
+        
+        # Print epoch, training error and validation error for progress record
+        print "(%s, %s, %s)" % (index + 1, training_error, validation_error)
     
     # Test neural network
-    print "Testing error = %f\n" % model.test_error()
+    print "Testing error = %s\n" % model.test_error()
     
+    # Replace old model with best model
+    model = best_model
+
 # Save models
 import gzip, cPickle
-with gzip.open("models/fcn_model.pkl.gz", "wb") as file:
+with gzip.open("models/simple_model.pkl.gz", "wb") as file:
     file.write(cPickle.dumps(models))
-'''
+
 # Load model
 import gzip, cPickle
-with gzip.open("models/fcn_model.pkl.gz", "rb") as file:
+with gzip.open("models/simple_model.pkl.gz", "rb") as file:
     models = cPickle.load(file)
 
 # Load test data and make prediction
@@ -45,10 +73,9 @@ x = models[-1].test_set_x.get_value()
 y = models[-1].test_set_y.get_value()
 prediction = models[-1].output(x)
 
-i=0
 for chunk in zip(x, y, prediction):
     # Create a figure and add a subplot with labels
-    fig = plt.figure(i)
+    fig = plt.figure(1)
     graph = fig.add_subplot(111)
     fig.suptitle("Chunk Data", fontsize=25)
     mean_abs_error = abs_error_cost(chunk[1], chunk[2]).eval()
@@ -67,5 +94,4 @@ for chunk in zip(x, y, prediction):
 
     # Add legend and display plot
     plt.legend(loc="upper left")
-    plt.savefig("images/graph%s.png"%i)
-    i+=1
+    plt.show()
