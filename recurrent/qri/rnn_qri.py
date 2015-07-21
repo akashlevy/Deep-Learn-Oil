@@ -1,5 +1,6 @@
-""" Vanilla RNN
-@author Graham Taylor
+"""
+RNN
+@author gwtaylor
 """
 
 import cPickle as pickle
@@ -8,12 +9,17 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import sys
 import theano
 import time
 
 from collections import OrderedDict
 from sklearn.base import BaseEstimator
+from theano import config
 from theano import tensor as T
+from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
+
+import process_data
 
 logger = logging.getLogger(__name__)
 plt.ion()
@@ -22,11 +28,9 @@ mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
 
 class RNN(object):
-    """    Recurrent neural network class
-    Supported output types:
-    real : linear output units, use mean-squared error
-    binary : binary output units, use cross-entropy error
-    softmax : single softmax out, use cross-entropy error
+    """
+    Recurrent Neural Network class
+    Outputs real values to predict oil production based on QRI Data
     """
     def __init__(self, input, n_in, n_hidden, n_out, activation=T.tanh,
                  output_type='real', use_symbolic_softmax=False):
@@ -115,19 +119,6 @@ class RNN(object):
 
         if self.output_type == 'real':
             self.loss = lambda y: self.mse(y)
-        elif self.output_type == 'binary':
-            # push through sigmoid
-            self.p_y_given_x = T.nnet.sigmoid(self.y_pred)  # apply sigmoid
-            self.y_out = T.round(self.p_y_given_x)  # round to {0,1}
-            self.loss = lambda y: self.nll_binary(y)
-        elif self.output_type == 'softmax':
-            # push through softmax, computing vector of class-membership
-            # probabilities in symbolic form
-            self.p_y_given_x = self.softmax(self.y_pred)
-
-            # compute prediction as class whose probability is maximal
-            self.y_out = T.argmax(self.p_y_given_x, axis=-1)
-            self.loss = lambda y: self.nll_multiclass(y)
         else:
             raise NotImplementedError
 
@@ -206,10 +197,6 @@ class MetaRNN(BaseEstimator):
         # target (where first dimension is time)
         if self.output_type == 'real':
             self.y = T.matrix(name='y', dtype=theano.config.floatX)
-        elif self.output_type == 'binary':
-            self.y = T.matrix(name='y', dtype='int32')
-        elif self.output_type == 'softmax':  # only vector labels supported
-            self.y = T.vector(name='y', dtype='int32')
         else:
             raise NotImplementedError
         # initial hidden state of the RNN
@@ -237,34 +224,15 @@ class MetaRNN(BaseEstimator):
             self.predict = theano.function(inputs=[self.x, ],
                                            outputs=self.rnn.y_pred,
                                            mode=mode)
-        elif self.output_type == 'binary':
-            self.predict_proba = theano.function(inputs=[self.x, ],
-                                outputs=self.rnn.p_y_given_x, mode=mode)
-            self.predict = theano.function(inputs=[self.x, ],
-                                outputs=T.round(self.rnn.p_y_given_x),
-                                mode=mode)
-        elif self.output_type == 'softmax':
-            self.predict_proba = theano.function(inputs=[self.x, ],
-                        outputs=self.rnn.p_y_given_x, mode=mode)
-            self.predict = theano.function(inputs=[self.x, ],
-                                outputs=self.rnn.y_out, mode=mode)
         else:
             raise NotImplementedError
 
     def shared_dataset(self, data_xy):
         """ Load the dataset into shared variables """
-
         data_x, data_y = data_xy
-        shared_x = theano.shared(np.asarray(data_x,
-                                            dtype=theano.config.floatX))
-
-        shared_y = theano.shared(np.asarray(data_y,
-                                            dtype=theano.config.floatX))
-
-        if self.output_type in ('binary', 'softmax'):
-            return shared_x, T.cast(shared_y, 'int32')
-        else:
-            return shared_x, shared_y
+        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX))
+        shared_y = theano.shared(np.asarray(data_y. dtype=theano.config.floatX))
+        return shared_x, shared_y
 
     def __getstate__(self):
         """ Return state sequence."""
@@ -483,115 +451,8 @@ def test_real():
         x.set_color(true_targets[i].get_color())
     ax2.set_title('solid: true output, dashed: model output')
 
-
-def test_binary(multiple_out=False, n_epochs=250):
-    """ Test RNN with binary outputs. """
-    n_hidden = 10
-    n_in = 5
-    if multiple_out:
-        n_out = 2
-    else:
-        n_out = 1
-    n_steps = 10
-    n_seq = 100
-
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
-    targets = np.zeros((n_seq, n_steps, n_out))
-
-    # whether lag 1 (dim 3) is greater than lag 2 (dim 0)
-    targets[:, 2:, 0] = np.cast[np.int](seq[:, 1:-1, 3] > seq[:, :-2, 0])
-
-    if multiple_out:
-        # whether product of lag 1 (dim 4) and lag 1 (dim 2)
-        # is less than lag 2 (dim 0)
-        targets[:, 2:, 1] = np.cast[np.int](
-            (seq[:, 1:-1, 4] * seq[:, 1:-1, 2]) > seq[:, :-2, 0])
-
-    model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
-                    learning_rate=0.001, learning_rate_decay=0.999,
-                    n_epochs=n_epochs, activation='tanh', output_type='binary')
-
-    model.fit(seq, targets, validation_frequency=1000)
-
-    seqs = xrange(10)
-
-    plt.close('all')
-    for seq_num in seqs:
-        fig = plt.figure()
-        ax1 = plt.subplot(211)
-        plt.plot(seq[seq_num])
-        ax1.set_title('input')
-        ax2 = plt.subplot(212)
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
-
-        guess = model.predict_proba(seq[seq_num])
-        guessed_targets = plt.step(xrange(n_steps), guess)
-        plt.setp(guessed_targets, linestyle='--', marker='d')
-        for i, x in enumerate(guessed_targets):
-            x.set_color(true_targets[i].get_color())
-        ax2.set_ylim((-0.1, 1.1))
-        ax2.set_title('solid: true output, dashed: model output (prob)')
-
-
-def test_softmax(n_epochs=250):
-    """ Test RNN with softmax outputs. """
-    n_hidden = 10
-    n_in = 5
-    n_steps = 10
-    n_seq = 100
-    n_classes = 3
-    n_out = n_classes  # restricted to single softmax per time step
-
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
-    targets = np.zeros((n_seq, n_steps), dtype=np.int)
-
-    thresh = 0.5
-    # if lag 1 (dim 3) is greater than lag 2 (dim 0) + thresh
-    # class 1
-    # if lag 1 (dim 3) is less than lag 2 (dim 0) - thresh
-    # class 2
-    # if lag 2(dim0) - thresh <= lag 1 (dim 3) <= lag2(dim0) + thresh
-    # class 0
-    targets[:, 2:][seq[:, 1:-1, 3] > seq[:, :-2, 0] + thresh] = 1
-    targets[:, 2:][seq[:, 1:-1, 3] < seq[:, :-2, 0] - thresh] = 2
-    #targets[:, 2:, 0] = np.cast[np.int](seq[:, 1:-1, 3] > seq[:, :-2, 0])
-
-    model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
-                    learning_rate=0.001, learning_rate_decay=0.999,
-                    n_epochs=n_epochs, activation='tanh',
-                    output_type='softmax', use_symbolic_softmax=False)
-
-    model.fit(seq, targets, validation_frequency=1000)
-
-    seqs = xrange(10)
-
-    plt.close('all')
-    for seq_num in seqs:
-        fig = plt.figure()
-        ax1 = plt.subplot(211)
-        plt.plot(seq[seq_num])
-        ax1.set_title('input')
-        ax2 = plt.subplot(212)
-
-        # blue line will represent true classes
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
-
-        # show probabilities (in b/w) output by model
-        guess = model.predict_proba(seq[seq_num])
-        guessed_probs = plt.imshow(guess.T, interpolation='nearest',
-                                   cmap='gray')
-        ax2.set_title('blue: true class, grayscale: probs assigned by model')
-
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    # test_real()
-    # problem takes more epochs to solve
-    #test_binary(multiple_out=True, n_epochs=2400)
-    test_softmax(n_epochs=250)
+    test_real()
     print "Elapsed time: %f" % (time.time() - t0)

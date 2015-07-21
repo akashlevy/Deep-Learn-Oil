@@ -17,6 +17,7 @@ import theano
 import time
 
 from collections import OrderedDict
+from process_text import load_text, make_sequence, make_target, unique_char
 from sklearn.base import BaseEstimator
 from theano import tensor as T
 
