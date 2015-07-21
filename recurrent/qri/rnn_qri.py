@@ -451,6 +451,8 @@ def test_real():
         x.set_color(true_targets[i].get_color())
     ax2.set_title('solid: true output, dashed: model output')
 
+    plt.show(block=True)
+    
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
