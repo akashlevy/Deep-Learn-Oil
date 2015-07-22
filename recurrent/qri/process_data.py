@@ -9,8 +9,9 @@ def prepare_data(seqs, labels, maxlen=None):
 
     This pad each sequence to the same length: the length of the
     longuest sequence or maxlen.
+    
+    - x: a list of sentences
     """
-    # x: a list of sentences
     lengths = [len(s) for s in seqs]
 
     if maxlen is not None:
@@ -32,8 +33,8 @@ def prepare_data(seqs, labels, maxlen=None):
     n_samples = len(seqs)
     maxlen = np.max(lengths)
 
-    x = np.zeros((maxlen, n_samples)).astype('int64')
-    x_mask = np.zeros((maxlen, n_samples)).astype(theano.config.floatX)
+    x = np.zeros((maxlen, n_samples))
+    x_mask = np.zeros((maxlen, n_samples), dtype=theano.config.floatX)
     for idx, s in enumerate(seqs):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
@@ -41,7 +42,7 @@ def prepare_data(seqs, labels, maxlen=None):
     return x, x_mask, labels
 
 def load_data(path="../../datasets/qri.pkl.gz", valid_portion=0.1, maxlen=None,
-              sort_by_len=True):
+              sort_by_len=False):
     """Loads the dataset
 
     :type path: String
@@ -68,5 +69,5 @@ def load_data(path="../../datasets/qri.pkl.gz", valid_portion=0.1, maxlen=None,
 
     train_set, valid_set, test_set = cPickle.load(f)
     f.close()
-    
+
     return train_set, valid_set, test_set
