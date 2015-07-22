@@ -79,7 +79,7 @@ class NNet1D(object):
             raise TypeError("Invalid previous layer")
             
         # Add the layer
-        layer = ConvPoolLayer(self.rng, input, input_length, batch_size,
+        layer = ConvPoolLayer(self.rng, input, input_length, self.batch_size,
                               filters, filter_length, input_number, poolsize,
                               activ_fn)
         self.layers.append(layer)
@@ -125,8 +125,10 @@ class NNet1D(object):
         # Cost function is last layer's output cost
         self.cost = self.layers[-1].cost(self.y)
         
-        # Keep a count of the number of training steps
+        # Keep a count of the number of training steps, train/valid errors
         self.epochs = 0
+        self.train_errors = []
+        self.valid_errors = []
         
         # Index for batching
         i = T.lscalar()
@@ -207,6 +209,8 @@ class NNet1D(object):
                         for i in xrange(self.n_train_batches)]
         valid_errors = [self.validate_model(i)
                         for i in xrange(self.n_valid_batches)]
+        self.train_errors.append(np.mean(train_errors))
+        self.valid_errors.append(np.mean(valid_errors))
         return np.mean(train_errors), np.mean(valid_errors)
             
     def test_error(self):
