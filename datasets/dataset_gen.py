@@ -18,7 +18,7 @@ STEP_MONTHS = 1
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
-SMOOTH_DATA = False
+SMOOTH_DATA = True
 NORMALIZE_DATA = True
 SMOOTH_LEN = 4
 
@@ -26,8 +26,8 @@ SMOOTH_LEN = 4
 SEED = 42
 
 # Dataset assignment
-DIFFERENT_WELLS = True
-DIFFERENT_SITES = False
+DIFFERENT_WELLS = False
+DIFFERENT_SITES = True # Must be false if DIFFERENT_WELLS is true
 TRAIN_SITES = ["BEAP", "BEAT", "BEDE", "BEZE", "EUAP"]
 VALID_SITES = ["EUAT"]
 TEST_SITES = ["EUZE"]
@@ -103,6 +103,7 @@ def preprocess_data(data):
             in_index = i
             out_index = i + IN_MONTHS
             end_index = i + IN_MONTHS + OUT_MONTHS
+<<<<<<< HEAD
             chunk = oils[in_index:end_index]
             chunk_x = oils[in_index:out_index]
             chunk_y = oils[out_index:end_index]
@@ -141,6 +142,47 @@ def preprocess_data(data):
                 print "Error: choose a dataset assignment option"
 
     # Make datasets
+=======
+            if end_index < len(oils):
+                chunk = oils[in_index:end_index]
+                chunk_x = oils[in_index:out_index]
+                chunk_y = oils[out_index:end_index]
+                
+                # Normalize data (skip chunk if standard deviation is 0)
+                chunk_std = np.std(chunk)
+                chunk_mean = np.mean(chunk)
+                if NORMALIZE_DATA and chunk_std != 0:
+                    chunk_x = (chunk_x - chunk_mean)/chunk_std
+                    chunk_y = (chunk_y - chunk_mean)/chunk_std
+                
+                # Add chunk
+                assert DIFFERENT_SITES or DIFFERENT_WELLS
+                if DIFFERENT_SITES:
+                    # Assign to dataset based on site name
+                    if well_name[:4] in TRAIN_SITES:
+                        train_x.append(chunk_x)
+                        train_y.append(chunk_y)
+                    elif well_name[:4] in VALID_SITES:
+                        valid_x.append(chunk_x)
+                        valid_y.append(chunk_y)
+                    elif well_name[:4] in TEST_SITES:
+                        test_x.append(chunk_x)
+                        test_y.append(chunk_y)
+                    else:
+                        print "Error: site %s not classified" % name
+                elif DIFFERENT_WELLS:
+                    # Assign to dataset based on well index
+                    if well_index < len(data)*6/8:
+                        train_x.append(chunk_x)
+                        train_y.append(chunk_y)
+                    elif well_index < len(data)*7/8:
+                        valid_x.append(chunk_x)
+                        valid_y.append(chunk_y)
+                    else:
+                        test_x.append(chunk_x)
+                        test_y.append(chunk_y)
+                    
+>>>>>>> d1ed41bb4e22f221a7f9e7d3cf40254112a87c9c
     train_set = (np.array(train_x), np.array(train_y))
     valid_set = (np.array(valid_x), np.array(valid_y))
     test_set = (np.array(test_x), np.array(test_y))

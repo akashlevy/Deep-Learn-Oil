@@ -91,8 +91,7 @@ def init_params(options):
     """
     params = OrderedDict()
     # embedding
-    randn = np.random.rand(36,
-                              options['dim_proj'])
+    randn = np.random.rand(12, options['dim_proj'])
     params['Wemb'] = (0.01 * randn).astype(config.floatX)
     params = get_layer(options['encoder'])[0](options,
                                               params,
@@ -351,9 +350,9 @@ def build_model(tparams, options):
     # Used for dropout.
     use_noise = theano.shared(np_floatX(0.))
 
-    x = T.matrix('x', dtype='int64')
+    x = T.matrix('x', dtype=config.floatX)
     mask = T.matrix('mask', dtype=config.floatX)
-    y = T.vector('y', dtype='int64')
+    y = T.vector('y', dtype=config.floatX)
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
@@ -408,7 +407,7 @@ def pred_probs(f_pred_prob, prepare_data, data, iterator, verbose=False):
 def pred_error(f_pred, prepare_data, data, iterator, verbose=False):
     """
     Just compute the error
-    f_pred: Theano fct computing the prediction
+    f_pred: Theano function computing the prediction
     prepare_data: usual prepare_data for that dataset.
     """
     valid_err = 0
@@ -439,27 +438,25 @@ def train_lstm(
     batch_size=16,  # The batch size during training.
     valid_batch_size=64,  # The batch size used for validation/test set.
     dataset='qri',
-
-    # Parameter for extra option
     noise_std=0.,
     use_dropout=True,  # if False slightly faster, but worst test error
-                       # This frequently need a bigger model.
     reload_model=None,  # Path to a saved model we want to start from.
-    test_size=-1,  # If >0, we keep only this number of test example.
+    test_size=273,  # If >0, we keep only this number of test example.
 ):
     # Model options
     model_options = locals().copy()
-    print "model options", model_options
+    print "Model options: ", model_options
 
     load_data, prepare_data = get_dataset(dataset)
 
-    print 'Loading data'
-    train, valid, test = load_data(valid_portion=0.05,
+    print "Loading data"
+    train, valid, test = load_data(valid_portion=0.1,
                                    maxlen=maxlen)
+    # Keep track of training set length
+    train_length = len(train[0])
+
     if test_size > 0:
-        # The test set is sorted by size, but we want to keep random
-        # size example.  So we must select a random selection of the
-        # examples.
+        # Select a random selection of the examples.
         idx = np.arange(len(test[0]))
         np.random.shuffle(idx)
         idx = idx[:test_size]
@@ -469,16 +466,16 @@ def train_lstm(
 
     model_options['ydim'] = ydim
 
-    print 'Building model'
-    # This create the initial parameters as np ndarrays.
+    print "Building model"
+    # This create the initial parameters as numpy ndarrays.
     # Dict name (string) -> np ndarray
     params = init_params(model_options)
 
     if reload_model:
         load_params('lstm_model.npz', params)
 
-    # This create Theano Shared Variable from the parameters.
-    # Dict name (string) -> Theano T Shared Variable
+    # Create Theano shared variable from the parameters.
+    # Dict name (string) -> Theano Tensor Shared Variable
     # params and tparams have different copy of the weights.
     tparams = init_tparams(params)
 
@@ -507,7 +504,7 @@ def train_lstm(
     kf_valid = get_minibatches_idx(len(valid[0]), valid_batch_size)
     kf_test = get_minibatches_idx(len(test[0]), valid_batch_size)
 
-    print "%d train examples" % len(train[0])
+    print "%d train examples" % train_length
     print "%d valid examples" % len(valid[0])
     print "%d test examples" % len(test[0])
 
@@ -516,19 +513,19 @@ def train_lstm(
     bad_count = 0
 
     if validFreq == -1:
-        validFreq = len(train[0]) / batch_size
+        validFreq = train_length / batch_size
     if saveFreq == -1:
-        saveFreq = len(train[0]) / batch_size
+        saveFreq = train_length / batch_size
 
     uidx = 0  # the number of update done
-    estop = False  # early stop
+    estop = True  # early stop
     start_time = time.time()
     try:
         for eidx in xrange(max_epochs):
             n_samples = 0
 
             # Get new shuffled index for the training set.
-            kf = get_minibatches_idx(len(train[0]), batch_size, shuffle=True)
+            kf = get_minibatches_idx(train_length, batch_size, shuffle=True)
 
             for _, train_index in kf:
                 uidx += 1
@@ -538,8 +535,7 @@ def train_lstm(
                 y = [train[1][t] for t in train_index]
                 x = [train[0][t]for t in train_index]
 
-                # Get the data in np.ndarray format
-                # This swap the axis!
+                # Get the data in np.ndarray format and swaps the axis!
                 # Return something of shape (minibatch maxlen, n samples)
                 x, mask, y = prepare_data(x, y)
                 n_samples += x.shape[1]
@@ -608,7 +604,7 @@ def train_lstm(
         best_p = unzip(tparams)
 
     use_noise.set_value(0.)
-    kf_train_sorted = get_minibatches_idx(len(train[0]), batch_size)
+    kf_train_sorted = get_minibatches_idx(train_length, batch_size)
     train_err = pred_error(f_pred, prepare_data, train, kf_train_sorted)
     valid_err = pred_error(f_pred, prepare_data, valid, kf_valid)
     test_err = pred_error(f_pred, prepare_data, test, kf_test)
