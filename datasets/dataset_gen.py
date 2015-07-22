@@ -18,7 +18,7 @@ STEP_MONTHS = 1
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
-SMOOTH_DATA = False
+SMOOTH_DATA = True
 NORMALIZE_DATA = True
 SMOOTH_LEN = 4
 
@@ -26,8 +26,8 @@ SMOOTH_LEN = 4
 SEED = 42
 
 # Dataset assignment
-DIFFERENT_WELLS = True
-DIFFERENT_SITES = False
+DIFFERENT_WELLS = False
+DIFFERENT_SITES = True # Must be false if DIFFERENT_WELLS is true
 TRAIN_SITES = ["BEAP", "BEAT", "BEDE", "BEZE", "EUAP"]
 VALID_SITES = ["EUAT"]
 TEST_SITES = ["EUZE"]
@@ -103,20 +103,23 @@ def preprocess_data(data):
                 chunk_y = oils[out_index:end_index]
                 
                 # Normalize data (skip chunk if standard deviation is 0)
-                if NORMALIZE_DATA and np.std(chunk) != 0:
-                    chunk_x = (chunk_x - np.mean(chunk))/np.std(chunk)
-                    chunk_y = (chunk_y - np.mean(chunk))/np.std(chunk)
+                chunk_std = np.std(chunk)
+                chunk_mean = np.mean(chunk)
+                if NORMALIZE_DATA and chunk_std != 0:
+                    chunk_x = (chunk_x - chunk_mean)/chunk_std
+                    chunk_y = (chunk_y - chunk_mean)/chunk_std
                 
                 # Add chunk
+                assert DIFFERENT_SITES or DIFFERENT_WELLS
                 if DIFFERENT_SITES:
                     # Assign to dataset based on site name
-                    if name[:4] in TRAIN_SITES:
+                    if well_name[:4] in TRAIN_SITES:
                         train_x.append(chunk_x)
                         train_y.append(chunk_y)
-                    elif name[:4] in VALID_SITES:
+                    elif well_name[:4] in VALID_SITES:
                         valid_x.append(chunk_x)
                         valid_y.append(chunk_y)
-                    elif name[:4] in TEST_SITES:
+                    elif well_name[:4] in TEST_SITES:
                         test_x.append(chunk_x)
                         test_y.append(chunk_y)
                     else:
@@ -132,8 +135,6 @@ def preprocess_data(data):
                     else:
                         test_x.append(chunk_x)
                         test_y.append(chunk_y)
-                else:
-                    print "Error: choose a dataset assignment option"
                     
     train_set = (np.array(train_x), np.array(train_y))
     valid_set = (np.array(valid_x), np.array(valid_y))
