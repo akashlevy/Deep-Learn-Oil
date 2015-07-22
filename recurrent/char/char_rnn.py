@@ -545,7 +545,7 @@ def test_softmax(dataset, n_epochs=250):
     n_in = 25
     n_steps = 100
     n_seq = length / (n_in * n_steps)
-    n_classes = 130 # unique_char(text) + 55 # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_classes = process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
     seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))
@@ -554,7 +554,7 @@ def test_softmax(dataset, n_epochs=250):
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.002, learning_rate_decay=0.97,
                     n_epochs=n_epochs, activation='tanh',
-                    output_type='softmax', use_symbolic_softmax=True)
+                    output_type='softmax', use_symbolic_softmax=False)
 
     model.fit(seq, targets, validation_frequency=200)
 
