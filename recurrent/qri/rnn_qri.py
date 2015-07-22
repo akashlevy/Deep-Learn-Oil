@@ -80,9 +80,8 @@ class RNN(object):
         self.params = [self.W, self.W_in, self.W_out, self.h0,
                        self.bh, self.by]
 
-        # for every parameter, we maintain it's last update
-        # the idea here is to use "momentum"
-        # keep moving mostly in the same direction
+        # For every parameter, we maintain its last update
+        # Use "momentum" to keep moving in same direction
         self.updates = {}
         for param in self.params:
             init = np.zeros(param.get_value(borrow=True).shape,
@@ -231,7 +230,7 @@ class MetaRNN(BaseEstimator):
         """ Load the dataset into shared variables """
         data_x, data_y = data_xy
         shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX))
-        shared_y = theano.shared(np.asarray(data_y. dtype=theano.config.floatX))
+        shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX))
         return shared_x, shared_y
 
     def __getstate__(self):
@@ -333,7 +332,7 @@ class MetaRNN(BaseEstimator):
                                               givens={
                                                   self.x: train_set_x[index],
                                                   self.y: train_set_y[index]},
-            mode=mode)
+                                              mode=mode)
 
         if self.interactive:
             compute_test_error = theano.function(inputs=[index, ],
@@ -413,22 +412,19 @@ class MetaRNN(BaseEstimator):
 
 def test_real():
     """ Test RNN with real-valued outputs. """
-    n_hidden = 10
-    n_in = 5
-    n_out = 3
-    n_steps = 10
-    n_seq = 100
+    n_hidden = 5
+    n_in = 36
+    n_out = 12
+    n_steps = 1
+    n_seq = 250
 
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
-    targets = np.zeros((n_seq, n_steps, n_out))
+    train, valid, test = process_data.load_data()
 
-    targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
-    targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
-    targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
+    seq, targets = train
 
-    targets += 0.01 * np.random.standard_normal(targets.shape)
+    seq = 
+    print seq[0]
+    print targets[0]
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
@@ -452,7 +448,7 @@ def test_real():
     ax2.set_title('solid: true output, dashed: model output')
 
     plt.show(block=True)
-    
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
