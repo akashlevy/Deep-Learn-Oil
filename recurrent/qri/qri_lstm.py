@@ -350,14 +350,14 @@ def build_model(tparams, options):
     # Used for dropout.
     use_noise = theano.shared(np_floatX(0.))
 
-    x = T.matrix('x', dtype=config.floatX)
+    x = T.matrix('x', dtype='float64')
     mask = T.matrix('mask', dtype=config.floatX)
-    y = T.vector('y', dtype=config.floatX)
+    y = T.vector('y', dtype='float64')
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
 
-    emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps,
+    emb = tparams['Wemb'].reshape([n_timesteps,
                                                 n_samples,
                                                 options['dim_proj']])
     proj = get_layer(options['encoder'])[1](tparams, emb, options,

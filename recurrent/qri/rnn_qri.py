@@ -422,7 +422,6 @@ def test_real():
 
     seq, targets = train
 
-    seq = 
     print seq[0]
     print targets[0]
 
