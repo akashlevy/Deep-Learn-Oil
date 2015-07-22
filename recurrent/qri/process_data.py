@@ -9,8 +9,9 @@ def prepare_data(seqs, labels, maxlen=None):
 
     This pad each sequence to the same length: the length of the
     longuest sequence or maxlen.
+    
+    - x: a list of sentences
     """
-    # x: a list of sentences
     lengths = [len(s) for s in seqs]
 
     if maxlen is not None:
@@ -68,5 +69,5 @@ def load_data(path="../../datasets/qri.pkl.gz", valid_portion=0.1, maxlen=None,
 
     train_set, valid_set, test_set = cPickle.load(f)
     f.close()
-    
+
     return train_set, valid_set, test_set
