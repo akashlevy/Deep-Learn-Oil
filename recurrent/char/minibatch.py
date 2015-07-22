@@ -1,7 +1,7 @@
 # code from https://github.com/gwtaylor/theano-rnn/ and Theano website
 
 """
-Vanilla RNN
+Vanilla RNN implementing minibatching
  - Parallelizes scan over sequences by using mini-batches.
  - author of Vanilla RNN: Graham Taylor
  - edited by Michelle (Ruomeng) Yang
@@ -20,74 +20,13 @@ from collections import OrderedDict
 from sklearn.base import BaseEstimator
 from theano import tensor as T
 
+import process_text
+
 logger = logging.getLogger(__name__)
 plt.ion()
 
 mode = theano.Mode(linker='py', optimizer="fast_compile")
 #mode = 'DEBUG_MODE'
-
-def load_text(dataset):
-    filename = open(dataset, "r")
-    strings = filename.read().replace('\n', ' ').replace('_', '')
-    return strings, len(strings)
-
-"""
-Make a sequence of shape (n_seq, n_steps, n_in) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
- - n_in: "hello" take "he" --> 2
-
-Turn individual characters into numbers using ord(c). This can be
-reversed by applying chr(ord(c)).
-"""
-def make_sequence(text, n_steps, n_in):
-    arr, first, second = [], [], []
-    nsteps, nin = 0, 0
-    for char in text:
-        second.append(ord(char))
-        nin += 1
-        if (nin >= n_in):
-            first.append(second)
-            nsteps += 1
-            second = []
-            nin = 0
-        if (nsteps >= n_steps):
-            arr.append(first)
-            first = []
-            nsteps = 0
-    return arr
-
-"""
-Make a target of shape (n_seq, n_steps) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
-
-Turn individual characters into numbers using ord(c). This can be
-reversed by applying chr(ord(c)).
-"""
-def make_target(text, n_seq, n_steps):
-    arr, inner = [], []
-    nsteps = 0
-    for char in text:
-        inner.append(ord(char))
-        nsteps += 1
-        if (nsteps >= n_steps):
-            arr.append(inner)
-            if (len(arr) >= n_seq):
-                break
-            inner = []
-            nsteps = 0
-    return arr
-
-"""
-Returns the number of unique characters within a string
-"""
-def unique_char(text):
-    unique = []
-    for char in text:
-        if char not in unique:
-            unique.append(char)
-    return len(unique)
 
 class RNN(object):
     """
@@ -945,17 +884,17 @@ def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
 
 def test_softmax(dataset, n_epochs=250, optimizer='cg'):
     """ Test RNN with softmax outputs. """
-    text, length = load_text(dataset)
+    text, length = process_text.load_text(dataset)
     n_hidden = 10
     n_in = 5
     n_steps = 10
     n_seq = 10 # per batch
     n_batches = length / (n_in * n_steps * n_seq)
-    n_classes = unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_classes = process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
-    seq = np.asarray(make_sequence(text, n_steps, n_in))
-    targets = np.asarray(make_target(text, n_seq, n_steps))
+    seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))
+    targets = np.asarray(process_text.make_target(text, n_seq, n_steps))
 
     # thresh = 0.5
     # # if lag 1 (dim 3) is greater than lag 2 (dim 0) + thresh

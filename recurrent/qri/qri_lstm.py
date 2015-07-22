@@ -91,8 +91,7 @@ def init_params(options):
     """
     params = OrderedDict()
     # embedding
-    randn = np.random.rand(36,
-                              options['dim_proj'])
+    randn = np.random.rand(12, options['dim_proj'])
     params['Wemb'] = (0.01 * randn).astype(config.floatX)
     params = get_layer(options['encoder'])[0](options,
                                               params,
@@ -351,9 +350,9 @@ def build_model(tparams, options):
     # Used for dropout.
     use_noise = theano.shared(np_floatX(0.))
 
-    x = T.matrix('x', dtype='int64')
+    x = T.matrix('x', dtype=config.floatX)
     mask = T.matrix('mask', dtype=config.floatX)
-    y = T.vector('y', dtype='int64')
+    y = T.vector('y', dtype=config.floatX)
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
@@ -408,7 +407,7 @@ def pred_probs(f_pred_prob, prepare_data, data, iterator, verbose=False):
 def pred_error(f_pred, prepare_data, data, iterator, verbose=False):
     """
     Just compute the error
-    f_pred: Theano fct computing the prediction
+    f_pred: Theano function computing the prediction
     prepare_data: usual prepare_data for that dataset.
     """
     valid_err = 0
@@ -451,7 +450,7 @@ def train_lstm(
     load_data, prepare_data = get_dataset(dataset)
 
     print "Loading data"
-    train, valid, test = load_data(valid_portion=0.05,
+    train, valid, test = load_data(valid_portion=0.1,
                                    maxlen=maxlen)
     # Keep track of training set length
     train_length = len(train[0])
@@ -540,13 +539,6 @@ def train_lstm(
                 # Return something of shape (minibatch maxlen, n samples)
                 x, mask, y = prepare_data(x, y)
                 n_samples += x.shape[1]
-
-                print "x: ", x
-                print x.shape
-                print "mask: ", mask
-                print mask.shape
-                print "y: ", y
-                print y[1].shape
 
                 cost = f_grad_shared(x, mask, y)
                 f_update(lrate)

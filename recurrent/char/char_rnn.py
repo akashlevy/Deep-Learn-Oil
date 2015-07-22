@@ -17,84 +17,16 @@ import theano
 import time
 
 from collections import OrderedDict
-from process_text import load_text, make_sequence, make_target, unique_char
 from sklearn.base import BaseEstimator
 from theano import tensor as T
+
+import process_text
 
 logger = logging.getLogger(__name__)
 plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
-
-"""
-Loads a PlainText file into a string without '\n'.
-Returns the string and the length of the string.
-"""
-def load_text(dataset):
-    filename = open(dataset, "r")
-    strings = filename.read().replace('\n', ' ').replace('_', '')
-    strings = strings[:100000]
-    return strings, len(strings)
-
-"""
-Make a sequence of shape (n_seq, n_steps, n_in) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
- - n_in: "hello" take "he" --> 2
-
-Turn individual characters into numbers using ord(c). This can be
-reversed by applying chr(ord(c)).
-"""
-def make_sequence(text, n_steps, n_in):
-    arr, first, second = [], [], []
-    nsteps, nin = 0, 0
-    for char in text:
-        second.append(ord(char))
-        nin += 1
-        if (nin >= n_in):
-            first.append(second)
-            nsteps += 1
-            second = []
-            nin = 0
-        if (nsteps >= n_steps):
-            arr.append(first)
-            first = []
-            nsteps = 0
-    return arr
-
-"""
-Make a target of shape (n_seq, n_steps) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
-
-Turn individual characters into numbers using ord(c). This can be
-reversed by applying chr(ord(c)).
-"""
-def make_target(text, n_seq, n_steps):
-    arr, inner = [], []
-    nsteps = 0
-    for char in text:
-        inner.append(ord(char))
-        nsteps += 1
-        if (nsteps >= n_steps):
-            arr.append(inner)
-            if (len(arr) >= n_seq):
-                break
-            inner = []
-            nsteps = 0
-    return arr
-
-"""
-Return the number of unique characters in a sequence of text.
-Calculates number of output classes for softmax classification.
-"""
-def unique_char(text):
-    unique = []
-    for char in text:
-        if char not in unique:
-            unique.append(char)
-    return len(unique)
 
 class RNN(object):
     """
@@ -608,7 +540,7 @@ def test_binary(multiple_out=False, n_epochs=250):
 
 def test_softmax(dataset, n_epochs=250):
     """ Test RNN with softmax outputs. """
-    text, length = load_text(dataset)
+    text, length = process_text.load_text(dataset)
     n_hidden = 50
     n_in = 25
     n_steps = 100
@@ -616,8 +548,8 @@ def test_softmax(dataset, n_epochs=250):
     n_classes = 130 # unique_char(text) + 55 # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
-    seq = np.asarray(make_sequence(text, n_steps, n_in))
-    targets = np.asarray(make_target(text, n_seq, n_steps))
+    seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))
+    targets = np.asarray(process_text.make_target(text, n_seq, n_steps))
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.002, learning_rate_decay=0.97,
