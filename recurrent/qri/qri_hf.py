@@ -92,16 +92,6 @@ def test_real(n_updates=100):
     for idx in xrange(length):
         guess = model.predict(seq[idx])
         plot_predictions(seq[idx][0], targets[idx][0], guess[0])
-        # fig = plt.figure()
-        # ax1 = plt.subplot(111)
-        # plt.plot(seq[idx][0])
-        # true_targets = plt.plot(targets[idx][0])
-        # guess = model.predict(seq[idx])
-        # guessed_targets = plt.plot(guess[0], linestyle='--')
-        # for i, x in enumerate(guessed_targets):
-        #     x.set_color(true_targets[i].get_color())
-        # ax1.set_title('solid: true output, dashed: model output')
-        # plt.show(block=True)
 
 def test_binary(multiple_out=False, n_updates=250):
     """ Test RNN with binary outputs. """
