@@ -103,14 +103,15 @@ def preprocess_data(data):
             in_index = i
             out_index = i + IN_MONTHS
             end_index = i + IN_MONTHS + OUT_MONTHS
-            chunk = oils[in_index:end_index]
             chunk_x = oils[in_index:out_index]
             chunk_y = oils[out_index:end_index]
             
-            # Normalize data (skip chunk if standard deviation is 0)
-            if NORMALIZE_DATA and np.std(chunk) != 0:
-                chunk_x = (chunk_x - np.mean(chunk))/np.std(chunk)
-                chunk_y = (chunk_y - np.mean(chunk))/np.std(chunk)
+            # Normalize chunk w/respect to x (skip if standard deviation is 0)
+            if NORMALIZE_DATA and np.std(chunk_x) != 0:
+                mean = np.mean(chunk_x)
+                std = np.std(chunk_x)
+                chunk_x = (chunk_x - mean)/std
+                chunk_y = (chunk_y - mean)/std
             
             # Add chunk
             if DIFFERENT_SITES:
