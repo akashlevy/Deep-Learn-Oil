@@ -10,7 +10,7 @@ import theano
 import theano.tensor as T
 import time
 from layers1d import ConvPoolLayer, FullyConnectedLayer
-from nnet_functions import abs_error_cost, tanh
+from nnet_fns import abs_error_cost, tanh
 
 
 # Configure floating point numbers for Theano
@@ -35,9 +35,9 @@ class NNet1D(object):
         # Initialize layers in the neural network
         self.layers = []
         
-        # Input and output matrices (2D)
-        self.x = T.matrix('x')
-        self.y = T.matrix('y')
+        # Input and output tensors
+        self.x = T.matrix('x', theano.config.floatX)
+        self.y = T.matrix('y', theano.config.floatX)
         
         # Split into training, validation, and testing datasets
         datasets = NNet1D.load_data(datafile)
@@ -59,37 +59,38 @@ class NNet1D(object):
 
     def add_conv_pool_layer(self, filters, filter_length, poolsize,
                             activ_fn=tanh):
-        """Add a convolutional layer to the network"""
+        """Add a convolutional layer to the network"""        
         # If first layer, use x as input
         if len(self.layers) == 0:
-            input = self.x
+            new_shape = (self.batch_size, 1, 1, self.n_in)
+            input = self.x.reshape(new_shape)
             input_number = 1
             input_length = self.n_in
         
         # If previous layer is convolutional, use its output as input
         elif isinstance(self.layers[-1], ConvPoolLayer):
             input = self.layers[-1].output
-            input_number = self.layers[-1].output_shape[1]
-            input_length = self.layers[-1].output_shape[3]
+            input_number = self.layers[-1].filter_shape[0]
+            input_length = self.layers[-1].output_length
         
         # If previous layer is fully connected, use its output as input
         elif isinstance(self.layers[-1], FullyConnectedLayer):
-            input = self.layers[-1].output
+            new_shape = (1, 1, 1, self.layers[-1].output_shape[0])
+            input = self.layers[-1].output.reshape(new_shape)
             input_number = 1
-            input_length = self.layers[-1].output_shape
+            input_length = self.layers[-1].output_shape[0]
         
         # Otherwise raise error
         else:
             raise TypeError("Invalid previous layer")
             
         # Add the layer
-        layer = ConvPoolLayer(self.rng, input, input_length, self.batch_size,
-                              filters, filter_length, input_number, poolsize,
-                              activ_fn)
+        layer = ConvPoolLayer(self.rng, input, input_length, filters,
+                              filter_length, input_number, poolsize, activ_fn)
         self.layers.append(layer)
 
     def add_fully_connected_layer(self, output_length=None, activ_fn=None):
-        """Add a fully connected layer to the network"""
+        """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
             output_length = self.n_out
@@ -102,13 +103,13 @@ class NNet1D(object):
         # If previous layer is convolutional, use its flattened output as input
         elif isinstance(self.layers[-1], ConvPoolLayer):
             input = self.layers[-1].output.flatten(2)
-            output_shape = self.layers[-1].output_shape
-            input_length = self.layers[-1].filter_shape[1] * output_shape[3]
+            input_length = self.layers[-1].filter_shape[1]
+            input_length *= self.layers[-1].output_length
         
         # If previous layer is fully connected, use its output as input
         elif isinstance(self.layers[-1], FullyConnectedLayer):
             input = self.layers[-1].output
-            input_length = self.layers[-1].output_shape
+            input_length = self.layers[-1].output_length
         
         # Otherwise raise error
         else:
@@ -116,15 +117,14 @@ class NNet1D(object):
             
         # Add the layer
         layer = FullyConnectedLayer(self.rng, input, input_length,
-                                    output_length, self.batch_size,
-                                    self.cost_fn, activ_fn)
+                                    output_length, activ_fn, self.cost_fn)
         self.layers.append(layer)
 
     def build(self):
-        """Build the neural network from the given layers"""
+        """Build the neural network from the given layers"""        
         # Last layer must be fully connected and produce correct output size
         assert isinstance(self.layers[-1], FullyConnectedLayer)
-        assert self.layers[-1].output_shape == self.n_out
+        assert self.layers[-1].output_length == self.n_out
         
         # Cost function is last layer's output cost
         self.cost = self.layers[-1].cost(self.y)
@@ -173,7 +173,7 @@ class NNet1D(object):
         output = self.layers[-1].output
         
         # Make Theano output function
-        self.output_function = theano.function([x], output, givens=givens)
+        self.output = theano.function([x], output, givens=givens)
 
     def gradient_updates_momentum(self, params):
         """Return the updates necessary to implement momentum"""
@@ -227,27 +227,12 @@ class NNet1D(object):
         with gzip.open(filename, "rb") as file:
             return cPickle.load(file)
 
-    def output(self, x):
-        """Return output from an input to the network"""
-        # Copy x to own its data
-        x = np.copy(x)
-        
-        # Store x's initial size
-        x_size = x.shape[0]
-        
-        # Resize x
-        x.resize(self.batch_size, self.n_in)
-        
-        # Return the output in x's initial size
-        return self.output_function(x)[:x_size]
-
     def plot_test_predictions(self, display_figs=True, save_figs=False,
                               output_folder="images", output_format="png"):
         """Plots the predictions for the first batch of the test set"""
         # Load test data and make prediction
-        batch_size = self.batch_size
-        x = self.test_set_x.get_value()
-        y = self.test_set_y.get_value()
+        x = self.test_set_x.get_value(borrow=True)
+        y = self.test_set_y.get_value(borrow=True)
         prediction = self.output(x)
 
         # Plot each chunk with its prediction
@@ -315,7 +300,7 @@ class NNet1D(object):
     def print_output_graph(self, outfile, format="svg"):
         """Print computational graph for producing output to filename in
         specified format"""
-        return theano.printing.pydotprint(self.output_function, format=format,
+        return theano.printing.pydotprint(self.output, format=format,
                                           outfile=outfile)
 
     def save_model(self, filename):
@@ -375,7 +360,8 @@ class NNet1D(object):
                 print "(%s, %s, %s)" % errors
         
         # Replace old model with best model
-        self.__dict__ = best_model.__dict__
+        if best_model is not None:
+            self.__dict__ = best_model.__dict__
         
         # Stop timer
         end_time = time.time()

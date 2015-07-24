@@ -1,71 +1,92 @@
 """Layer classes of a 1-D neural network"""
 
+import matplotlib.pyplot as plt
 import numpy as np
 import theano
 import theano.tensor as T
 from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv
-from nnet_functions import relu, sqr_error_cost
+from nnet_functions import tanh, abs_error_cost
 
 
-class ConvPoolLayer(object):
+class Layer(object):
+    """Layer of a 1-D neural network"""
+    def __init__(self, input, input_length, activ_fn):
+        """Store required layer attributes"""
+        self.input = input
+        self.input_length = input_length
+        self.activ_fn = activ_fn
+
+
+class ConvPoolLayer(Layer):
     """Convolutional layer of a 1-D neural network"""
-    def __init__(self, rng, input, input_length, batch_size, filters,
-                 filter_length, input_number=1, poolsize=1, activ_fn=relu,
-                 W_bound=0.1):
+    def __init__(self, rng, input, input_length, filters, filter_length,
+                 input_number=1, poolsize=1, activ_fn=tanh, W_bound=0.1):
         """Initialize layer"""
         # Make sure that convolution output is evenly divisible by poolsize
         assert (input_length - filter_length + 1) % poolsize == 0
         
-        # Determine input, output, and filter tensor sizes
-        conv_output_size = (input_length-filter_length+1)/poolsize
-        self.input_shape = (batch_size, input_number, 1, input_length)
-        self.output_shape = (batch_size, filters, 1, conv_output_size)
+        # Determine input and output length as well as filter shape
+        self.output_length = (input_length - filter_length + 1) / poolsize
         self.filter_shape = (filters, input_number, 1, filter_length)
         
-        # Store poolsize and activation function
+        # Store input, input length, activation function, and poolsize
+        super(ConvPoolLayer,self).__init__(input, input_length, activ_fn)
         self.poolsize = poolsize
-        self.activ_fn = activ_fn
-        
-        # Reshape input to input size and store
-        self.input = input.reshape(self.input_shape)
         
         # Model parameters (weights and biases)
-        filts = rng.uniform(low=-W_bound, high=W_bound, size=self.filter_shape)
         dtype = theano.config.floatX
+        filts = rng.uniform(low=-W_bound, high=W_bound, size=self.filter_shape)
         self.W = theano.shared(np.asarray(filts, dtype=dtype), borrow=True)
         self.b = theano.shared(np.zeros(filters, dtype=dtype), borrow=True)
 
         # Convolve input feature maps with filters
-        conv_out = conv.conv2d(self.input, self.W,
-                               image_shape=self.input_shape,
-                               filter_shape=self.filter_shape)
+        conv_out = conv.conv2d(self.input, self.W, None, self.filter_shape)
 
         # Downsample each feature map individually, using maxpooling
-        pooled_out = downsample.max_pool_2d(input=conv_out,
-                                            ds=(1, self.poolsize),
-                                            ignore_border=True)
+        pooled_out = downsample.max_pool_2d(input=conv_out, ds=(1, poolsize))
         
         # Store output
-        bias = self.b.dimshuffle('x', 0, 'x', 'x')
-        self.output = self.activ_fn(pooled_out + bias)
+        self.output = activ_fn(pooled_out + self.b.dimshuffle('x',0,'x','x'))
 
         # Store parameters of this layer
         self.params = [self.W, self.b]
 
+    def __repr__(self):
+        """Return string representation of ConvPoolLayer"""
+        format_line = "ConvPoolLayer(rng, input, %s, %s, %s, "
+        format_line += "input_number=%s, poolsize=%s, activ_fn=%s)"
+        activ_fn_name = self.activ_fn.__name__ if self.activ_fn else "None"
+        return format_line % (self.input_length, self.filter_shape[0],
+                              self.filter_shape[3], self.filter_shape[1],
+                              self.poolsize, activ_fn_name)
+    
+    def __str__(self):
+        """Return string representation of ConvPoolLayer"""
+        return self.__repr__()
 
-class FullyConnectedLayer(object):
+    def plot_filters(self, cmap="gray"):
+        """Plot the filters"""
+        filters = self.W.get_value(borrow=True)
+        new_shape = (-1, filters.shape[3])
+        filters = np.resize(filters, new_shape)
+        print filters
+        fig = plt.figure(1)
+        graph = fig.add_subplot(111)
+        mat = graph.matshow(filters, cmap=cmap, interpolation="none")
+        fig.colorbar(mat)
+        plt.show()
+
+
+class FullyConnectedLayer(Layer):
     """Fully connected layer of a 1-D neural network"""
-    def __init__(self, rng, input, input_length, output_length, batch_size,
-                 cost_fn=sqr_error_cost, activ_fn=None, W_bound=0.1):
+    def __init__(self, rng, input, input_length, output_length, activ_fn=None,
+                 cost_fn=abs_error_cost, W_bound=0.1):
         """Initialize fully connected layer"""
-        # Determine input and output tensor sizes
-        self.input_shape = (batch_size, input_length)
-        self.output_shape = output_length
-        
-        # Store input and cost function
-        self.input = input
+        # Store layer parameters, cost function, output length
+        super(FullyConnectedLayer,self).__init__(input, input_length, activ_fn)
         self.cost_fn = cost_fn
+        self.output_length = output_length
         
         # Model parameters (weights and biases)'
         weight_size = (input_length, output_length)
@@ -78,9 +99,31 @@ class FullyConnectedLayer(object):
         # Store output and params of this layer
         self.output = T.dot(input, self.W) + self.b
         if activ_fn is not None:
-            self.output = activ_fn(self.output)
+            self.output = self.activ_fn(self.output)
         self.params = [self.W, self.b]
 
+    def __repr__(self):
+        """Return string representation of FullyConnectedLayer"""
+        format_line = "FullyConnectedLayer(rng, input, %s, %s, activ_fn=%s, "
+        format_line += "cost_fn=%s)"
+        activ_fn_name = self.activ_fn.__name__ if self.activ_fn else "None"
+        cost_fn_name = self.cost_fn.__name__ if self.cost_fn else "None"
+        return format_line % (self.input_length, self.output_length,
+                              activ_fn_name, cost_fn_name)
+    
+    def __str__(self):
+        """Return string representation of FullyConnectedLayer"""
+        return self.__repr__()
+    
     def cost(self, y):
         """Return the cost associated with the output"""
         return self.cost_fn(y, self.output)
+        
+    def plot_weights(self, cmap="gray"):
+        """Plot the weight matrix"""
+        weights = self.W.get_value(borrow=True)
+        fig = plt.figure(1)
+        graph = fig.add_subplot(111)
+        mat = graph.matshow(weights, cmap=cmap, interpolation="none")
+        fig.colorbar(mat)
+        plt.show()
