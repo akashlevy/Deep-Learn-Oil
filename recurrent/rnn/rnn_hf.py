@@ -9,7 +9,7 @@ https://github.com/boulanni/theano-hf
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-from rnn_mnist import MetaRNN
+from rnn import MetaRNN
 from hf import SequenceDataset, hf_optimizer
 
 def test_real(n_updates=100):
@@ -17,19 +17,21 @@ def test_real(n_updates=100):
     n_hidden = 10
     n_in = 5
     n_out = 3
-    n_steps = 10
-    n_seq = 1000
+    n_steps = 1
+    n_seq = 100
 
     np.random.seed(0)
     # simple lag test
     seq = np.random.randn(n_seq, n_steps, n_in)
+    print seq
 
     targets = np.zeros((n_seq, n_steps, n_out))
-    targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
-    targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
-    targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
+    print targets
+    # targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
+    # targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
+    # targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
 
-    targets += 0.01 * np.random.standard_normal(targets.shape)
+    # targets += 0.01 * np.random.standard_normal(targets.shape)
 
     # SequenceDataset wants a list of sequences
     # this allows them to be different lengths, but here they're not
@@ -206,6 +208,6 @@ def test_softmax(n_updates=250):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    #test_real(n_updates=20)
+    test_real(n_updates=20)
     #test_binary(multiple_out=True, n_updates=20)
-    test_softmax(n_updates=20)
+    # test_softmax(n_updates=20)

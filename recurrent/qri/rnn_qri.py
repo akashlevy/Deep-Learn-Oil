@@ -422,8 +422,8 @@ def test_real():
 
     seq, targets = train
 
-    print seq[0]
-    print targets[0]
+    seq = [[i] for i in seq]
+    targets = [[i] for i in targets]
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
