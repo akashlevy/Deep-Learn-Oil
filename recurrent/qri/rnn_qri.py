@@ -349,7 +349,7 @@ class MetaRNN(BaseEstimator):
             gparam = T.grad(cost, param)
             gparams.append(gparam)
 
-        updates = {}
+        updates = OrderedDict()
         for param, gparam in zip(self.rnn.params, gparams):
             weight_update = self.rnn.updates[param]
             upd = mom * weight_update - l_r * gparam
@@ -410,46 +410,56 @@ class MetaRNN(BaseEstimator):
             self.learning_rate *= self.learning_rate_decay
 
 
-def test_real():
+def test_real(n_epochs=20, validation_frequency=1000):
     """ Test RNN with real-valued outputs. """
+    train, valid, test = process_data.load_data()
+    seq, targets = train
+    length = len(seq)
+
     n_hidden = 5
     n_in = 36
     n_out = 12
     n_steps = 1
-    n_seq = 250
+    n_seq = length
 
-    train, valid, test = process_data.load_data()
-
-    seq, targets = train
-
-    print seq[0]
-    print targets[0]
+    seq = [[i] for i in seq]
+    targets = [[i] for i in targets]
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
-                    learning_rate=0.001, learning_rate_decay=0.999,
-                    n_epochs=400, activation='tanh')
+                    learning_rate=0.01, learning_rate_decay=0.99,
+                    n_epochs=n_epochs, activation='tanh')
 
-    model.fit(seq, targets, validation_frequency=1000)
+    model.fit(seq, targets, validation_frequency=validation_frequency)
 
-    plt.close('all')
-    fig = plt.figure()
-    ax1 = plt.subplot(211)
-    plt.plot(seq[0])
-    ax1.set_title('input')
+    plt.close("all")
+    for idx in xrange(length):
+        fig = plt.figure()
+        ax1 = plt.subplot(111)
+        org_plot = np.append(seq[idx][0], targets[idx][0])
+        original = plt.plot(org_plot, "b-o")
+        guess = model.predict(seq[idx])
+        guess_plot = np.append(seq[idx][0], guess)
+        pred = plt.plot(guess_plot, "g-o", linestyle='--')
+        # for i, x in enumerate(pred):
+        #     x.set_color(original[i].get_color())
+        ax1.set_title('solid: true output, dashed: model output')
+        plt.show(block=True)
 
-    ax2 = plt.subplot(212)
-    true_targets = plt.plot(targets[0])
-
-    guess = model.predict(seq[0])
-    guessed_targets = plt.plot(guess, linestyle='--')
-    for i, x in enumerate(guessed_targets):
-        x.set_color(true_targets[i].get_color())
-    ax2.set_title('solid: true output, dashed: model output')
-
-    plt.show(block=True)
+    # plt.close("all")
+    # for idx in xrange(length):
+    #     fig = plt.figure()
+    #     ax1 = plt.subplot(111)
+    #     plt.plot(seq[idx][0])
+    #     true_targets = plt.plot(targets[idx][0])
+    #     guess = model.predict(seq[idx])
+    #     guessed_targets = plt.plot(guess[0], linestyle='--')
+    #     for i, x in enumerate(guessed_targets):
+    #         x.set_color(true_targets[i].get_color())
+    #     ax1.set_title('solid: true output, dashed: model output')
+    #     plt.show(block=True)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real()
+    test_real(1, 5000)
     print "Elapsed time: %f" % (time.time() - t0)
