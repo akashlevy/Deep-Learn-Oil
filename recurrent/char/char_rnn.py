@@ -545,7 +545,7 @@ def test_softmax(dataset, n_epochs=250):
     n_in = 25
     n_steps = 100
     n_seq = length / (n_in * n_steps)
-    n_classes = process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_classes = 130 #process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
     seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))

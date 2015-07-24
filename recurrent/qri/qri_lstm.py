@@ -357,8 +357,7 @@ def build_model(tparams, options):
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
 
-    emb = tparams['Wemb'].reshape([n_timesteps,
-                                                n_samples,
+    emb = tparams['Wemb'].reshape([n_timesteps, n_samples,
                                                 options['dim_proj']])
     proj = get_layer(options['encoder'])[1](tparams, emb, options,
                                             prefix=options['encoder'],

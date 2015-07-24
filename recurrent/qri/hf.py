@@ -15,7 +15,6 @@ def gauss_newton_product(cost, p, v, s):  # this computes the product Gv = J'HJv
   Gv = map(T.as_tensor_variable, Gv)  # for CudaNdarray
   return Gv
 
-
 class hf_optimizer:
   '''Black-box Theano-based Hessian-free optimizer.
 See (Martens, ICML 2010) and (Martens & Sutskever, ICML 2011) for details.
@@ -168,7 +167,10 @@ train :
       result += self.list_to_flat(self.function_Gv(*(inputs + v + [lambda_*self.mu]))) / self.cg_dataset.number_batches
     return result
 
-  def train(self, gradient_dataset, cg_dataset, initial_lambda=0.1, mu=0.03, global_backtracking=False, preconditioner=False, max_cg_iterations=250, num_updates=100, validation=None, validation_frequency=1, patience=numpy.inf, save_progress=None):
+  def train(self, gradient_dataset, cg_dataset, initial_lambda=0.1, mu=0.03,
+            global_backtracking=False, preconditioner=False, max_cg_iterations=250,
+            num_updates=100, validation=None, validation_frequency=1,
+            patience=numpy.inf, save_progress=None):
     '''Performs HF training.
   gradient_dataset : SequenceDataset-like object
       Defines batches used to compute the gradient.
@@ -221,7 +223,7 @@ train :
       self.cg_last_x, best, self.lambda_, first_iteration, init_p = save
       first_iteration += 1
       for i, j in zip(self.p, init_p): i.set_value(j)
-      print '* recovered saved model'
+      print 'Recovered saved model'
     
     try:
       for u in xrange(first_iteration, 1 + num_updates):
@@ -235,8 +237,8 @@ train :
           gradient += self.list_to_flat(result[:len(self.p)]) / gradient_dataset.number_batches
           costs.append(result[len(self.p):])
 
-        print 'cost=', numpy.mean(costs, axis=0),
-        print 'lambda=%.5f,' % self.lambda_,
+        print 'cost: ', numpy.mean(costs, axis=0),
+        print 'lambda: %.5f,' % self.lambda_,
         sys.stdout.flush()
 
         after_cost, flat_delta, backtracking, num_cg_iterations = self.cg(-gradient)
@@ -258,10 +260,10 @@ train :
             costs = numpy.mean([self.f_cost(*i) for i in validation.iterate()], axis=0)
           elif callable(validation):
             costs = validation()
-          print 'validation=', costs,
+          print 'validation: ', costs,
           if costs[0] < best[1]:
             best = u, costs[0], [i.get_value().copy() for i in self.p]
-            print '*NEW BEST',
+            print '* NEW BEST',
 
         if isinstance(save_progress, str):
           # do not save dataset states
@@ -280,7 +282,6 @@ train :
     if best[2] is None:
       best[2] = [i.get_value().copy() for i in self.p]
     return best[2]
-
 
 class SequenceDataset:
   '''Slices, shuffles and manages a small dataset for the HF optimizer.'''
