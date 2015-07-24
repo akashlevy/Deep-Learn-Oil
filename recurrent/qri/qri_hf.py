@@ -49,10 +49,10 @@ def test_real(n_updates=100):
     for idx in xrange(length):
         fig = plt.figure()
         ax1 = plt.subplot(111)
-        plt.plot(seq[idx])
-        true_targets = plt.plot(targets[idx])
+        plt.plot(seq[idx][0])
+        true_targets = plt.plot(targets[idx][0])
         guess = model.predict(seq[idx])
-        guessed_targets = plt.plot(guess, linestyle='--')
+        guessed_targets = plt.plot(guess[0], linestyle='--')
         for i, x in enumerate(guessed_targets):
             x.set_color(true_targets[i].get_color())
         ax1.set_title('solid: true output, dashed: model output')
