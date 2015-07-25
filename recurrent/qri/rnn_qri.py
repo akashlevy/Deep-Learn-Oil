@@ -14,6 +14,7 @@ import theano
 import time
 
 from collections import OrderedDict
+from func import sqr_error_cost, abs_error_cost, std_abs_error
 from sklearn.base import BaseEstimator
 from theano import config
 from theano import tensor as T
@@ -409,6 +410,47 @@ class MetaRNN(BaseEstimator):
 
             self.learning_rate *= self.learning_rate_decay
 
+def plot_predictions(curr_seq, curr_targets, curr_guess, display_figs=True, save_figs=False,
+                     output_folder="images", output_format="png"):
+    """ Plots the predictions """
+    # Create a figure and add a subplot with labels
+    fig = plt.figure()
+    graph = plt.subplot(111)
+    fig.suptitle("Chunk Data", fontsize=25)
+    plt.xlabel("Month", fontsize=15)
+    plt.ylabel("Production", fontsize=15)
+    
+    # Make and display error label
+    mean_abs_error = abs_error_cost(curr_targets, curr_guess).eval()
+    abs_error = std_abs_error(curr_targets, curr_guess).eval()
+    error = (mean_abs_error, abs_error)
+    plt.title("Mean Abs Error: %f, Std: %f" % error, fontsize=10)
+
+    # Plot the predictions as a blue line with round markers
+    prediction = np.append(curr_seq, curr_guess)
+    graph.plot(prediction, "b-o", label="Prediction")
+
+    # Plot the future as a green line with round markers
+    future = np.append(curr_seq, curr_targets)
+    graph.plot(future, "g-o", label="Future")
+
+    # Plot the past as a red line with round markers
+    graph.plot(curr_seq, "r-o", label="Past")
+
+    # Add legend
+    plt.legend(loc="upper left")
+
+    # Save the graphs to a folder
+    if save_figs:
+        filename = "%s/%04d.%s" % (output_folder, i, output_format)
+        fig.savefig(filename, format=output_format)
+
+    # Display the graph
+    if display_figs:
+        plt.show(block=True)
+
+    # Clear the graph
+    plt.close(fig)
 
 def test_real(n_epochs=20, validation_frequency=1000):
     """ Test RNN with real-valued outputs. """
@@ -433,17 +475,8 @@ def test_real(n_epochs=20, validation_frequency=1000):
 
     plt.close("all")
     for idx in xrange(length):
-        fig = plt.figure()
-        ax1 = plt.subplot(111)
-        org_plot = np.append(seq[idx][0], targets[idx][0])
-        original = plt.plot(org_plot, "b-o")
         guess = model.predict(seq[idx])
-        guess_plot = np.append(seq[idx][0], guess)
-        pred = plt.plot(guess_plot, "g-o", linestyle='--')
-        # for i, x in enumerate(pred):
-        #     x.set_color(original[i].get_color())
-        ax1.set_title('solid: true output, dashed: model output')
-        plt.show(block=True)
+        plot_predictions(seq[idx][0], targets[idx][0], guess[0])
 
     # plt.close("all")
     # for idx in xrange(length):
@@ -461,5 +494,5 @@ def test_real(n_epochs=20, validation_frequency=1000):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real(1, 5000)
+    test_real(5, 5000)
     print "Elapsed time: %f" % (time.time() - t0)
