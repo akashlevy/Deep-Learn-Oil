@@ -21,7 +21,7 @@ class Layer(object):
 class ConvPoolLayer(Layer):
     """Convolutional layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, filters, filter_length,
-                 input_number=1, poolsize=1, activ_fn=tanh, W_bound=0.1):
+                 input_number=1, poolsize=1, activ_fn=tanh, W_bound=0.0001):
         """Initialize layer"""
         # Make sure that convolution output is evenly divisible by poolsize
         assert (input_length - filter_length + 1) % poolsize == 0
@@ -81,7 +81,7 @@ class ConvPoolLayer(Layer):
 class FullyConnectedLayer(Layer):
     """Fully connected layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, output_length, activ_fn=None,
-                 cost_fn=abs_error_cost, W_bound=0.1):
+                 cost_fn=abs_error_cost, W_bound=0.0001):
         """Initialize fully connected layer"""
         # Store layer parameters, cost function, output length
         super(FullyConnectedLayer,self).__init__(input, input_length, activ_fn)

@@ -12,14 +12,14 @@ import random as rnd
 DATA_DIRECTORY = "../data"
 
 # Splitting data
-IN_MONTHS = 36
+IN_MONTHS = 48
 OUT_MONTHS = 12
 STEP_MONTHS = 1
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
 SMOOTH_DATA = False
-NORMALIZE_DATA = True
+NORMALIZE_DATA = False
 SMOOTH_LEN = 4
 
 # Random seed
