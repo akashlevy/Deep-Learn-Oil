@@ -58,7 +58,7 @@ class NNet1D(object):
         self.n_test_batches /= batch_size
 
     def add_conv_pool_layer(self, filters, filter_length, poolsize,
-                            activ_fn=tanh):
+                            activ_fn=tanh, W_bound=0.0001):
         """Add a convolutional layer to the network"""        
         # If first layer, use x as input
         if len(self.layers) == 0:
@@ -86,10 +86,12 @@ class NNet1D(object):
             
         # Add the layer
         layer = ConvPoolLayer(self.rng, input, input_length, filters,
-                              filter_length, input_number, poolsize, activ_fn)
+                              filter_length, input_number, poolsize, activ_fn,
+                              W_bound)
         self.layers.append(layer)
 
-    def add_fully_connected_layer(self, output_length=None, activ_fn=None):
+    def add_fully_connected_layer(self, output_length=None, activ_fn=None,
+                                  W_bound=0.0001):
         """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -117,7 +119,8 @@ class NNet1D(object):
             
         # Add the layer
         layer = FullyConnectedLayer(self.rng, input, input_length,
-                                    output_length, activ_fn, self.cost_fn)
+                                    output_length, activ_fn, self.cost_fn,
+                                    W_bound)
         self.layers.append(layer)
 
     def build(self):
@@ -306,12 +309,12 @@ class NNet1D(object):
     def save_model(self, filename):
         """Save the model to a file"""
         with gzip.open(filename, "wb") as file:
-            file.write(cPickle.dumps(self))   
+            file.write(cPickle.dumps(self))
 
     def test_error(self):
         """Return average test error from the network"""
         test_errors = [self.test_error_batch(i)
-                       for i in range(self.n_test_batches)]
+                       for i in xrange(self.n_test_batches)]
         return np.mean(test_errors)
 
     def train(self):
@@ -320,12 +323,13 @@ class NNet1D(object):
         self.epochs += 1
         train_errors = [self.train_batch(i)
                         for i in xrange(self.n_train_batches)]
+        mean_train_error = np.mean(train_errors)
         mean_valid_error = self.valid_error()
-        self.train_errors.append(np.mean(train_errors))
+        self.train_errors.append(mean_train_error)
         self.valid_errors.append(mean_valid_error)
-        return np.mean(train_errors), mean_valid_error
+        return mean_train_error, mean_valid_error
 
-    def train_early_stopping(self, patience=15, min_epochs=0,
+    def train_early_stopping(self, patience=5, min_epochs=0,
                              max_epochs=50000, print_error=True):
         """Train the model with early stopping based on validation error.
         Return the time elapsed"""
@@ -333,22 +337,20 @@ class NNet1D(object):
         start_time = time.time()
         
         # Early stopping bests
-        best_model = None
-        best_validation_error = np.inf
         best_epochs = 0
+        best_valid_error = np.inf
 
         # Train model
         while self.epochs < max_epochs:
             # Run training step on model
-            training_error, validation_error = self.train()
+            train_error, valid_error = self.train()
             
             # Only check bests if past min_epochs
             if self.epochs > min_epochs:
                 # If lower validation error, record new best
-                if validation_error < best_validation_error:
-                    best_model = copy.deepcopy(self)
-                    best_validation_error = validation_error
+                if valid_error < best_valid_error:
                     best_epochs = self.epochs
+                    best_valid_error = valid_error
                     
                 # If patience exceeded, done training
                 if best_epochs + patience < self.epochs:
@@ -356,12 +358,8 @@ class NNet1D(object):
             
             # Print epoch, training error and validation error
             if print_error:
-                errors = (self.epochs, training_error, validation_error)
+                errors = (self.epochs, train_error, valid_error)
                 print "(%s, %s, %s)" % errors
-        
-        # Replace old model with best model
-        if best_model is not None:
-            self.__dict__ = best_model.__dict__
         
         # Stop timer
         end_time = time.time()
@@ -369,19 +367,19 @@ class NNet1D(object):
         # Test neural network and stop timer
         if print_error:
             print "Testing error = %s\n" % self.test_error()
-            print "Time elapsed: %f" % (end_time-start_time)
+            print "Time elapsed: %f" % (end_time - start_time)
             
         # Return time elapsed
-        return end_time-start_time
+        return end_time - start_time
 
     def train_error(self):
         """Return average train error from the network"""
         train_errors = [self.train_error_batch(i)
-                        for i in range(self.n_train_batches)]
+                        for i in xrange(self.n_train_batches)]
         return np.mean(train_errors)
     
     def valid_error(self):
         """Return average train error from the network"""
         valid_errors = [self.valid_error_batch(i)
-                        for i in range(self.n_valid_batches)]
+                        for i in xrange(self.n_valid_batches)]
         return np.mean(valid_errors)
