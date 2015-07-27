@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv
-from nnet_functions import tanh, abs_error_cost
+from nnet_functions import relu, abs_error_cost
 
 
 class Layer(object):
@@ -21,7 +21,7 @@ class Layer(object):
 class ConvPoolLayer(Layer):
     """Convolutional layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, filters, filter_length,
-                 input_number=1, poolsize=1, activ_fn=tanh, W_bound=0.1):
+                 input_number=1, poolsize=1, activ_fn=relu, W_bound=0.01):
         """Initialize layer"""
         # Make sure that convolution output is evenly divisible by poolsize
         assert (input_length - filter_length + 1) % poolsize == 0
@@ -81,7 +81,7 @@ class ConvPoolLayer(Layer):
 class FullyConnectedLayer(Layer):
     """Fully connected layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, output_length, activ_fn=None,
-                 cost_fn=abs_error_cost, W_bound=0.1):
+                 cost_fn=abs_error_cost, W_bound=0.01):
         """Initialize fully connected layer"""
         # Store layer parameters, cost function, output length
         super(FullyConnectedLayer,self).__init__(input, input_length, activ_fn)
@@ -121,6 +121,74 @@ class FullyConnectedLayer(Layer):
         
     def plot_weights(self, cmap="gray"):
         """Plot the weight matrix"""
+        weights = self.W.get_value(borrow=True)
+        fig = plt.figure(1)
+        graph = fig.add_subplot(111)
+        mat = graph.matshow(weights, cmap=cmap, interpolation="none")
+        fig.colorbar(mat)
+        plt.show()
+
+
+class RecurrentLayer(Layer):
+    """Recurrent layer of neural network"""
+    def __init__(self, rng, input, input_length, output_length, activ_fn=relu,
+                 W_bound=0.01):
+        """Initialize recurrent layer"""
+        # Store layer parameters and output length
+        super(RecurrentLayer, self).__init__(input, input_length, activ_fn)
+        self.output_length = output_length
+
+        # Recurrent weights
+        weight_size = (output_length, output_length)
+        weights = rng.uniform(low=-W_bound, high=W_bound, size=weight_size)
+        dtype = theano.config.floatX
+        self.W = theano.shared(value=np.asarray(weights, dtype=dtype))
+        
+        # Input to hidden layer weights
+        weight_size = (input_length, output_length)
+        weights = rng.uniform(low=-W_bound, high=W_bound, size=weight_size)
+        self.W_in = theano.shared(value=np.asarray(weights, dtype=dtype))
+
+        # Initial state of hidden layer
+        self.h0 = theano.shared(np.zeros((output_length,), dtype=dtype))
+
+        # Bias of hidden layer
+        self.b = theano.shared(np.zeros((output_length,), dtype=dtype))
+
+        # Store output and params of this layer
+        self.params = [self.W, self.W_in, self.h0, self.b]
+
+        # Recurrent function
+        def step(x_t, h_tm1):
+            self.h_t = T.dot(x_t, self.W_in) + T.dot(h_tm1, self.W) + self.b
+            self.h_t = self.activ_fn(self.h_t)
+            return self.h_t
+
+        # Get output
+        self.output, _ = theano.scan(step, self.input, outputs_info=self.h0)
+    
+    def __repr__(self):
+        """Return string representation of FullyConnectedLayer"""
+        format_line = "RNNLayer(rng, input, %s, %s, activ_fn=%s, cost_fn=%s)"
+        activ_fn_name = self.activ_fn.__name__ if self.activ_fn else "None"
+        return format_line % (self.input_length, self.output_length,
+                              activ_fn_name)
+    
+    def __str__(self):
+        """Return string representation of FullyConnectedLayer"""
+        return self.__repr__()
+        
+    def plot_weights(self, cmap="gray"):
+        """Plot the weight matrix"""
+        weights = self.W_in.get_value(borrow=True)
+        fig = plt.figure(1)
+        graph = fig.add_subplot(111)
+        mat = graph.matshow(weights, cmap=cmap, interpolation="none")
+        fig.colorbar(mat)
+        plt.show()
+        
+    def plot_recurrent_weights(self, cmap="gray"):
+        """Plot the rweight matrix"""
         weights = self.W.get_value(borrow=True)
         fig = plt.figure(1)
         graph = fig.add_subplot(111)
