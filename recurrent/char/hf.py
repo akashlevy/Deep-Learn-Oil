@@ -15,6 +15,7 @@ def gauss_newton_product(cost, p, v, s):  # this computes the product Gv = J'HJv
   Gv = map(T.as_tensor_variable, Gv)  # for CudaNdarray
   return Gv
 
+
 class hf_optimizer:
   '''Black-box Theano-based Hessian-free optimizer.
 See (Martens, ICML 2010) and (Martens & Sutskever, ICML 2011) for details.
@@ -60,7 +61,7 @@ train :
     v = [symbolic_types[len(i)]() for i in self.shapes]
     Gv = gauss_newton_product(costs[0], p, v, s)
 
-    coefficient = T.scalar()  # this is lambda * mu
+    coefficient = T.scalar()  # this is lambda*mu    
     if h is not None:  # structural damping with cross-entropy
       h_constant = symbolic_types[h.ndim]()  # T.Rop does not support `consider_constant` yet, so use `givens`
       structural_damping = coefficient * (-h_constant*T.log(h + 1e-10) - (1-h_constant)*T.log((1-h) + 1e-10)).sum() / h.shape[0]
@@ -92,6 +93,7 @@ train :
         i.set_value(i.get_value() - d)
 
     return cost
+
 
   def cg(self, b):
     if self.preconditioner:
@@ -167,10 +169,7 @@ train :
       result += self.list_to_flat(self.function_Gv(*(inputs + v + [lambda_*self.mu]))) / self.cg_dataset.number_batches
     return result
 
-  def train(self, gradient_dataset, cg_dataset, initial_lambda=0.1, mu=0.03,
-            global_backtracking=False, preconditioner=False, max_cg_iterations=250,
-            num_updates=100, validation=None, validation_frequency=1,
-            patience=20, save_progress=None):
+  def train(self, gradient_dataset, cg_dataset, initial_lambda=0.1, mu=0.03, global_backtracking=False, preconditioner=False, max_cg_iterations=250, num_updates=100, validation=None, validation_frequency=1, patience=numpy.inf, save_progress=None):
     '''Performs HF training.
   gradient_dataset : SequenceDataset-like object
       Defines batches used to compute the gradient.
@@ -223,7 +222,7 @@ train :
       self.cg_last_x, best, self.lambda_, first_iteration, init_p = save
       first_iteration += 1
       for i, j in zip(self.p, init_p): i.set_value(j)
-      print 'Recovered saved model'
+      print '* recovered saved model'
     
     try:
       for u in xrange(first_iteration, 1 + num_updates):
@@ -237,8 +236,8 @@ train :
           gradient += self.list_to_flat(result[:len(self.p)]) / gradient_dataset.number_batches
           costs.append(result[len(self.p):])
 
-        print 'cost: ', numpy.mean(costs, axis=0),
-        print 'lambda: %.5f,' % self.lambda_,
+        print 'cost=', numpy.mean(costs, axis=0),
+        print 'lambda=%.5f,' % self.lambda_,
         sys.stdout.flush()
 
         after_cost, flat_delta, backtracking, num_cg_iterations = self.cg(-gradient)
@@ -260,10 +259,10 @@ train :
             costs = numpy.mean([self.f_cost(*i) for i in validation.iterate()], axis=0)
           elif callable(validation):
             costs = validation()
-          print 'validation: ', costs,
+          print 'validation=', costs,
           if costs[0] < best[1]:
             best = u, costs[0], [i.get_value().copy() for i in self.p]
-            print '* NEW BEST',
+            print '*NEW BEST',
 
         if isinstance(save_progress, str):
           # do not save dataset states
@@ -282,6 +281,7 @@ train :
     if best[2] is None:
       best[2] = [i.get_value().copy() for i in self.p]
     return best[2]
+
 
 class SequenceDataset:
   '''Slices, shuffles and manages a small dataset for the HF optimizer.'''

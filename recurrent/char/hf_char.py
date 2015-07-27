@@ -5,12 +5,14 @@ It requires the theano-hf package:
 https://github.com/boulanni/theano-hf
 @author Graham Taylor
 """
-
-import numpy as np
-import matplotlib.pyplot as plt
 import logging
-from rnn import MetaRNN
+import matplotlib.pyplot as plt
+import numpy as np
+
+from char_rnn import MetaRNN
 from hf import SequenceDataset, hf_optimizer
+
+import process_text
 
 def test_real(n_updates=100):
     """ Test RNN with real-valued outputs. """
@@ -134,33 +136,20 @@ def test_binary(multiple_out=False, n_updates=250):
         ax2.set_title('solid: true output, dashed: model output (prob)')
 
 
-def test_softmax(n_updates=250):
+def test_softmax(dataset, n_updates=250):
     """ Test RNN with softmax outputs. """
+    text, length = process_text.load_text(dataset)
     n_hidden = 10
-    n_in = 5
-    n_steps = 10
-    n_seq = 100
-    n_classes = 3
-    n_out = n_classes  # restricted to single softmax per time step
+    n_in = 25
+    n_steps = 130
+    n_seq = length / (n_steps * n_in)
+    n_classes = 130 # process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
+    n_out = n_classes # restricted to single softmax per time step
 
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
-    targets = np.zeros((n_seq, n_steps), dtype='int32')
-
-    thresh = 0.5
-    # if lag 1 (dim 3) is greater than lag 2 (dim 0) + thresh
-    # class 1
-    # if lag 1 (dim 3) is less than lag 2 (dim 0) - thresh
-    # class 2
-    # if lag 2(dim0) - thresh <= lag 1 (dim 3) <= lag2(dim0) + thresh
-    # class 0
-    targets[:, 2:][seq[:, 1:-1, 3] > seq[:, :-2, 0] + thresh] = 1
-    targets[:, 2:][seq[:, 1:-1, 3] < seq[:, :-2, 0] - thresh] = 2
-    #targets[:, 2:, 0] = np.cast[np.int](seq[:, 1:-1, 3] > seq[:, :-2, 0])
+    seq = np.asarray(process_text.make_sequence(text, n_steps, n_in), dtype='int32')
+    targets = np.asarray(process_text.make_target(text, n_seq, n_steps, n_out), dtype='int32')
 
     # SequenceDataset wants a list of sequences
-    # this allows them to be different lengths, but here they're not
     seq = [i for i in seq]
     targets = [i for i in targets]
 
@@ -184,28 +173,12 @@ def test_softmax(n_updates=250):
     # seem to do a little worse than the default
     opt.train(gradient_dataset, cg_dataset, num_updates=n_updates)
 
-    seqs = xrange(10)
-
-    plt.close('all')
-    for seq_num in seqs:
-        fig = plt.figure()
-        ax1 = plt.subplot(211)
-        plt.plot(seq[seq_num])
-        ax1.set_title('input')
-
-        ax2 = plt.subplot(212)
-        # blue line will represent true classes
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
-
-        # show probabilities (in b/w) output by model
-        guess = model.predict_proba(seq[seq_num])
-        guessed_probs = plt.imshow(guess.T, interpolation='nearest',
-                                   cmap='gray')
-        ax2.set_title('blue: true class, grayscale: probs assigned by model')
-
+    for seq_num in xrange(10):
+        guess = model.predict(seq[seq_num])
+        print "prediction: ", chr(guess[0])
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    test_real(n_updates=20)
+    # test_real(n_updates=20)
     #test_binary(multiple_out=True, n_updates=20)
-    # test_softmax(n_updates=20)
+    test_softmax("sherlock.txt", n_updates=100)
