@@ -455,8 +455,10 @@ def plot_predictions(curr_seq, curr_targets, curr_guess, display_figs=True, save
 def test_real(n_epochs=20, validation_frequency=1000):
     """ Test RNN with real-valued outputs. """
     train, valid, test = process_data.load_data()
-    seq, targets = train
-    length = len(seq)
+    tseq, ttargets = train
+    vseq, vtargets = valid
+    test_seq, test_targets = test
+    length = len(tseq)
 
     n_hidden = 5
     n_in = 36
@@ -464,8 +466,8 @@ def test_real(n_epochs=20, validation_frequency=1000):
     n_steps = 1
     n_seq = length
 
-    seq = [[i] for i in seq]
-    targets = [[i] for i in targets]
+    seq = [[i] for i in tseq]
+    targets = [[i] for i in ttargets]
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.01, learning_rate_decay=0.99,
@@ -473,10 +475,12 @@ def test_real(n_epochs=20, validation_frequency=1000):
 
     model.fit(seq, targets, validation_frequency=validation_frequency)
 
+    test_seq = [[i] for i in test_seq]
+    test_targets = [[i] for i in test_targets]
     plt.close("all")
-    for idx in xrange(length):
-        guess = model.predict(seq[idx])
-        plot_predictions(seq[idx][0], targets[idx][0], guess[0])
+    for idx in xrange(len(test_seq)):
+        guess = model.predict(test_seq[idx])
+        plot_predictions(test_seq[idx][0], test_targets[idx][0], guess[0])
 
     # plt.close("all")
     # for idx in xrange(length):
@@ -494,5 +498,5 @@ def test_real(n_epochs=20, validation_frequency=1000):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real(5, 5000)
+    test_real(1, 5000)
     print "Elapsed time: %f" % (time.time() - t0)

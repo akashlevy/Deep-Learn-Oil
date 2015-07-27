@@ -12,7 +12,7 @@ def load_text(dataset):
     return strings, len(strings)
 
 """
-Make a sequence of shape (n_seq, n_steps, n_in) from a given text
+Make a sequence of shape (n_seq, n_steps, n_in) from a given text.
  - n_seq: number of sentences
  - n_steps: "hello" --> 4
  - n_in: "hello" take "he" --> 2
@@ -22,15 +22,13 @@ reversed by applying chr(ord(c)).
 """
 def make_sequence(text, n_steps, n_in):
     arr, first, second = [], [], []
-    nsteps, nin = 0, 0
-    for char in text:
-        second.append(ord(char))
-        nin += 1
-        if (nin >= n_in):
-            first.append(second)
-            nsteps += 1
-            second = []
-            nin = 0
+    nsteps = 0
+    for i in xrange(len(text) - n_in):
+        for idx in xrange(n_in):
+            second.append(ord(text[i + idx]))
+        first.append(second)
+        nsteps += 1
+        second = []
         if (nsteps >= n_steps):
             arr.append(first)
             first = []
@@ -38,25 +36,25 @@ def make_sequence(text, n_steps, n_in):
     return arr
 
 """
-Make a target of shape (n_seq, n_steps) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
+Make a target of shape (n_seq, n_steps) from a given text.
 
 Turn individual characters into numbers using ord(c). This can be
 reversed by applying chr(ord(c)).
 """
-def make_target(text, n_seq, n_steps):
+def make_target(text, n_seq, n_steps, n_out):
     arr, inner = [], []
     nsteps = 0
-    for char in text:
-        inner.append(ord(char))
-        nsteps += 1
-        if (nsteps >= n_steps):
-            arr.append(inner)
-            if (len(arr) >= n_seq):
-                break
-            inner = []
-            nsteps = 0
+    for i in xrange(len(text) - n_out):
+        for idx in xrange(n_out):
+            inner.append(ord(text[i + idx]))
+        arr.append(inner)
+        inner = []
+        # nsteps += 1
+        # if (nsteps >= n_steps):
+        #     arr.append(inner)
+        #     if (len(arr) >= n_seq):
+        #         break
+        #     nsteps = 0
     return arr
 
 """
