@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv
-from nnet_functions import tanh, abs_error_cost
+from nnet_functions import relu, abs_error_cost
 
 
 class Layer(object):
@@ -21,7 +21,7 @@ class Layer(object):
 class ConvPoolLayer(Layer):
     """Convolutional layer of a 1-D neural network"""
     def __init__(self, rng, input, input_length, filters, filter_length,
-                 input_number=1, poolsize=1, activ_fn=tanh, W_bound=0.01):
+                 input_number=1, poolsize=1, activ_fn=relu, W_bound=0.01):
         """Initialize layer"""
         # Make sure that convolution output is evenly divisible by poolsize
         assert (input_length - filter_length + 1) % poolsize == 0
@@ -129,13 +129,13 @@ class FullyConnectedLayer(Layer):
         plt.show()
 
 
-class RNNLayer(Layer):
+class RecurrentLayer(Layer):
     """Recurrent layer of neural network"""
     def __init__(self, rng, input, input_length, output_length, activ_fn=relu,
                  W_bound=0.01):
         """Initialize recurrent layer"""
         # Store layer parameters and output length
-        super(FullyConnectedLayer,self).__init__(input, input_length, activ_fn)
+        super(RecurrentLayer, self).__init__(input, input_length, activ_fn)
         self.output_length = output_length
 
         # Recurrent weights
@@ -153,19 +153,19 @@ class RNNLayer(Layer):
         self.h0 = theano.shared(np.zeros((output_length,), dtype=dtype))
 
         # Bias of hidden layer
-        self.bh = theano.shared(np.zeros((output_length,), dtype=dtype))
+        self.b = theano.shared(np.zeros((output_length,), dtype=dtype))
 
         # Store output and params of this layer
-        self.params = [self.W, self.W_in, self.h0, self.bh]
+        self.params = [self.W, self.W_in, self.h0, self.b]
 
         # Recurrent function
         def step(x_t, h_tm1):
-            self.h_t = T.dot(x_t, self.W_in) + T.dot(h_tm1, self.W) + self.bh
+            self.h_t = T.dot(x_t, self.W_in) + T.dot(h_tm1, self.W) + self.b
             self.h_t = self.activ_fn(self.h_t)
             return self.h_t
 
-        # Get hidden layer
-        self.h = theano.scan(step, sequences=self.input, outputs_info=self.h0)
+        # Get output
+        self.output, _ = theano.scan(step, self.input, outputs_info=self.h0)
     
     def __repr__(self):
         """Return string representation of FullyConnectedLayer"""

@@ -9,7 +9,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 import time
-from layers1d import ConvPoolLayer, FullyConnectedLayer
+from layers1d import ConvPoolLayer, FullyConnectedLayer, RecurrentLayer, Layer
 from nnet_fns import abs_error_cost, relu
 
 
@@ -74,7 +74,7 @@ class NNet1D(object):
             input_length = self.layers[-1].output_length
         
         # If previous layer is fully connected, use its output as input
-        elif isinstance(self.layers[-1], FullyConnectedLayer):
+        elif isinstance(self.layers[-1], Layer):
             new_shape = (1, 1, 1, self.layers[-1].output_shape[0])
             input = self.layers[-1].output.reshape(new_shape)
             input_number = 1
@@ -109,7 +109,7 @@ class NNet1D(object):
             input_length *= self.layers[-1].output_length
         
         # If previous layer is fully connected, use its output as input
-        elif isinstance(self.layers[-1], FullyConnectedLayer):
+        elif isinstance(self.layers[-1], Layer):
             input = self.layers[-1].output
             input_length = self.layers[-1].output_length
         
@@ -121,6 +121,38 @@ class NNet1D(object):
         layer = FullyConnectedLayer(self.rng, input, input_length,
                                     output_length, activ_fn, self.cost_fn,
                                     W_bound)
+        self.layers.append(layer)
+
+    def add_recurrent_layer(self, output_length=None, activ_fn=None,
+                            W_bound=0):
+        """Add a fully connected layer to the network"""        
+        # If output_length is None, use self.n_out
+        if output_length is None:
+            output_length = self.n_out
+        
+        # If first layer, use x as input
+        if len(self.layers) == 0:
+            input = self.x
+            input_length = self.n_in
+        
+        # If previous layer is convolutional, use its flattened output as input
+        elif isinstance(self.layers[-1], ConvPoolLayer):
+            input = self.layers[-1].output.flatten(2)
+            input_length = self.layers[-1].filter_shape[1]
+            input_length *= self.layers[-1].output_length
+        
+        # If previous layer is fully connected, use its output as input
+        elif isinstance(self.layers[-1], Layer):
+            input = self.layers[-1].output
+            input_length = self.layers[-1].output_length
+        
+        # Otherwise raise error
+        else:
+            raise TypeError("Invalid previous layer")
+            
+        # Add the layer
+        layer = RecurrentLayer(self.rng, input, input_length, output_length,
+                               activ_fn, W_bound)
         self.layers.append(layer)
 
     def build(self):
@@ -329,7 +361,7 @@ class NNet1D(object):
         self.valid_errors.append(mean_valid_error)
         return mean_train_error, mean_valid_error
 
-    def train_early_stopping(self, patience=5, improve_thresh=0,
+    def train_early_stopping(self, patience=5, improve_thresh=0.00001,
                              min_epochs=0, max_epochs=50000, print_error=True):
         """Train the model with early stopping based on validation error.
         Return the time elapsed"""
