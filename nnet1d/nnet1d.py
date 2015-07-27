@@ -10,7 +10,7 @@ import theano
 import theano.tensor as T
 import time
 from layers1d import ConvPoolLayer, FullyConnectedLayer
-from nnet_fns import abs_error_cost, tanh
+from nnet_fns import abs_error_cost, relu
 
 
 # Configure floating point numbers for Theano
@@ -20,7 +20,7 @@ theano.config.floatX = "float32"
 class NNet1D(object):
     """A neural network implemented for 1D neural networks in Theano"""
     def __init__(self, seed, datafile, batch_size, learning_rate, momentum,
-                 cost_fn=tanh):
+                 cost_fn=abs_error_cost):
         """Initialize network: seed the random number generator, load the
         datasets, and store model parameters"""
         # Store random number generator, batch size, learning rate and momentum
@@ -58,12 +58,12 @@ class NNet1D(object):
         self.n_test_batches /= batch_size
 
     def add_conv_pool_layer(self, filters, filter_length, poolsize,
-                            activ_fn=tanh, W_bound=0.0001):
+                            activ_fn=relu, W_bound=0.0001):
         """Add a convolutional layer to the network"""        
         # If first layer, use x as input
         if len(self.layers) == 0:
             new_shape = (self.batch_size, 1, 1, self.n_in)
-            input = self.x.reshape(new_shape)
+            input = self.x.dimshuffle(0, 'x', 'x', 1)
             input_number = 1
             input_length = self.n_in
         
@@ -91,7 +91,7 @@ class NNet1D(object):
         self.layers.append(layer)
 
     def add_fully_connected_layer(self, output_length=None, activ_fn=None,
-                                  W_bound=0.0001):
+                                  W_bound=0):
         """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -329,8 +329,8 @@ class NNet1D(object):
         self.valid_errors.append(mean_valid_error)
         return mean_train_error, mean_valid_error
 
-    def train_early_stopping(self, patience=5, min_epochs=0,
-                             max_epochs=50000, print_error=True):
+    def train_early_stopping(self, patience=5, improve_thresh=0,
+                             min_epochs=0, max_epochs=50000, print_error=True):
         """Train the model with early stopping based on validation error.
         Return the time elapsed"""
         # Start timer
@@ -348,7 +348,7 @@ class NNet1D(object):
             # Only check bests if past min_epochs
             if self.epochs > min_epochs:
                 # If lower validation error, record new best
-                if valid_error < best_valid_error:
+                if valid_error + improve_thresh < best_valid_error:
                     best_epochs = self.epochs
                     best_valid_error = valid_error
                     
