@@ -69,7 +69,6 @@ def get_data():
     # Return data dictionary
     return data
 
-
 def preprocess_data(data):
     """Returns preprocessed version of the data"""
     # Initialize dataset components
@@ -116,13 +115,13 @@ def preprocess_data(data):
             # Add chunk
             if DIFFERENT_SITES:
                 # Assign to dataset based on site name
-                if name[:4] in TRAIN_SITES:
+                if well_names[:4] in TRAIN_SITES:
                     train_x.append(chunk_x)
                     train_y.append(chunk_y)
-                elif name[:4] in VALID_SITES:
+                elif well_names[:4] in VALID_SITES:
                     valid_x.append(chunk_x)
                     valid_y.append(chunk_y)
-                elif name[:4] in TEST_SITES:
+                elif well_names[:4] in TEST_SITES:
                     test_x.append(chunk_x)
                     test_y.append(chunk_y)
                 else:
@@ -140,14 +139,13 @@ def preprocess_data(data):
                     test_y.append(chunk_y)
             else:
                 print "Error: choose a dataset assignment option"
-
+                return
     # Make datasets
     train_set = (np.array(train_x), np.array(train_y))
     valid_set = (np.array(valid_x), np.array(valid_y))
     test_set = (np.array(test_x), np.array(test_y))
     
     return train_set, valid_set, test_set
-
 
 def plot_chunks(datasets):
     """Plots the datasets' chunks using pyplot"""
@@ -186,5 +184,5 @@ if __name__ == '__main__':
     with gzip.open("qri.pkl.gz", "wb") as file:
         file.write(cPickle.dumps(datasets))
     print "Done!"
-    print "Plotting chunks..."
-    plot_chunks(datasets)
+    # print "Plotting chunks..."
+    # plot_chunks(datasets)
