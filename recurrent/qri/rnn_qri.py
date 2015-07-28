@@ -482,19 +482,6 @@ def test_real(n_epochs=20, validation_frequency=1000):
         guess = model.predict(test_seq[idx])
         plot_predictions(test_seq[idx][0], test_targets[idx][0], guess[0])
 
-    # plt.close("all")
-    # for idx in xrange(length):
-    #     fig = plt.figure()
-    #     ax1 = plt.subplot(111)
-    #     plt.plot(seq[idx][0])
-    #     true_targets = plt.plot(targets[idx][0])
-    #     guess = model.predict(seq[idx])
-    #     guessed_targets = plt.plot(guess[0], linestyle='--')
-    #     for i, x in enumerate(guessed_targets):
-    #         x.set_color(true_targets[i].get_color())
-    #     ax1.set_title('solid: true output, dashed: model output')
-    #     plt.show(block=True)
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
