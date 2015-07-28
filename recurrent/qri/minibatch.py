@@ -20,74 +20,13 @@ from collections import OrderedDict
 from sklearn.base import BaseEstimator
 from theano import tensor as T
 
+import process_data
+
 logger = logging.getLogger(__name__)
 plt.ion()
 
 mode = theano.Mode(linker='py', optimizer="fast_compile")
 #mode = 'DEBUG_MODE'
-
-def load_text(dataset):
-    filename = open(dataset, "r")
-    strings = filename.read().replace('\n', ' ').replace('_', '')
-    return strings, len(strings)
-
-"""
-Make a sequence of shape (n_seq, n_steps, n_in) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
- - n_in: "hello" take "he" --> 2
-
-Turn individual characters into numbers using ord(c). This can be
-reversed by applying chr(ord(c)).
-"""
-def make_sequence(text, n_steps, n_in):
-    arr, first, second = [], [], []
-    nsteps, nin = 0, 0
-    for char in text:
-        second.append(ord(char))
-        nin += 1
-        if (nin >= n_in):
-            first.append(second)
-            nsteps += 1
-            second = []
-            nin = 0
-        if (nsteps >= n_steps):
-            arr.append(first)
-            first = []
-            nsteps = 0
-    return arr
-
-"""
-Make a target of shape (n_seq, n_steps) from a given text
- - n_seq: number of sentences
- - n_steps: "hello" --> 4
-
-Turn individual characters into numbers using ord(c). This can be
-reversed by applying chr(ord(c)).
-"""
-def make_target(text, n_seq, n_steps):
-    arr, inner = [], []
-    nsteps = 0
-    for char in text:
-        inner.append(ord(char))
-        nsteps += 1
-        if (nsteps >= n_steps):
-            arr.append(inner)
-            if (len(arr) >= n_seq):
-                break
-            inner = []
-            nsteps = 0
-    return arr
-
-"""
-Returns the number of unique characters within a string
-"""
-def unique_char(text):
-    unique = []
-    for char in text:
-        if char not in unique:
-            unique.append(char)
-    return len(unique)
 
 class RNN(object):
     """
@@ -201,19 +140,17 @@ class RNN(object):
 
         # L1 norm ; one regularization option is to enforce L1 norm to
         # be small
-        self.L1 = abs(self.W.sum()) + abs(self.W_in.sum()) + abs(self.W_out.sum())
-        # self.L1 = 0
-        # self.L1 += abs(self.W.sum())
-        # self.L1 += abs(self.W_in.sum())
-        # self.L1 += abs(self.W_out.sum())
+        self.L1 = 0
+        self.L1 += abs(self.W.sum())
+        self.L1 += abs(self.W_in.sum())
+        self.L1 += abs(self.W_out.sum())
 
         # square of L2 norm ; one regularization option is to enforce
         # square of L2 norm to be small
-        self.L2_sqr = (self.W ** 2).sum() + (self.W_in ** 2).sum() + (self.W_in ** 2).sum()
-        # self.L2_sqr = 0
-        # self.L2_sqr += (self.W ** 2).sum()
-        # self.L2_sqr += (self.W_in ** 2).sum()
-        # self.L2_sqr += (self.W_out ** 2).sum()
+        self.L2_sqr = 0
+        self.L2_sqr += (self.W ** 2).sum()
+        self.L2_sqr += (self.W_in ** 2).sum()
+        self.L2_sqr += (self.W_out ** 2).sum()
 
         if self.output_type == 'real':
             self.loss = lambda y: self.mse(y)
@@ -368,12 +305,10 @@ class MetaRNN(BaseEstimator):
         """ Load the dataset into shared variables """
 
         data_x, data_y = data_xy
-        shared_x = theano.shared(np.asarray(data_x,
-                                            dtype=theano.config.floatX),
+        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX),
                                  borrow=True)
 
-        shared_y = theano.shared(np.asarray(data_y,
-                                            dtype=theano.config.floatX),
+        shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX),
                                  borrow=True)
 
         if self.output_type in ('binary', 'softmax'):
@@ -382,20 +317,18 @@ class MetaRNN(BaseEstimator):
             return shared_x, shared_y
 
     def __getstate__(self):
-        """ Return state sequence."""
+        """ Return state sequence. """
         params = self._get_params()  # parameters set in constructor
         theta = self.rnn.theta.get_value()
         state = (params, theta)
         return state
 
     def _set_weights(self, theta):
-        """ Set fittable parameters from weights sequence.
-        """
+        """ Set fittable parameters from weights sequence. """
         self.rnn.theta.set_value(theta)
 
     def __setstate__(self, state):
-        """ Set parameters from state sequence.
-        """
+        """ Set parameters from state sequence. """
         params, theta = state
         self.set_params(**params)
         self.ready()
@@ -844,49 +777,79 @@ class MetaRNN(BaseEstimator):
         else:
             raise NotImplementedError
 
+def plot_predictions(curr_seq, curr_targets, curr_guess, display_figs=True, save_figs=False,
+                     output_folder="images", output_format="png"):
+    """ Plots the predictions """
+    # Create a figure and add a subplot with labels
+    fig = plt.figure()
+    graph = plt.subplot(111)
+    fig.suptitle("Chunk Data", fontsize=25)
+    plt.xlabel("Month", fontsize=15)
+    plt.ylabel("Production", fontsize=15)
+    
+    # Make and display error label
+    mean_abs_error = abs_error_cost(curr_targets, curr_guess).eval()
+    abs_error = std_abs_error(curr_targets, curr_guess).eval()
+    error = (mean_abs_error, abs_error)
+    plt.title("Mean Abs Error: %f, Std: %f" % error, fontsize=10)
+
+    # Plot the predictions as a blue line with round markers
+    prediction = np.append(curr_seq, curr_guess)
+    graph.plot(prediction, "b-o", label="Prediction")
+
+    # Plot the future as a green line with round markers
+    future = np.append(curr_seq, curr_targets)
+    graph.plot(future, "g-o", label="Future")
+
+    # Plot the past as a red line with round markers
+    graph.plot(curr_seq, "r-o", label="Past")
+
+    # Add legend
+    plt.legend(loc="upper left")
+
+    # Save the graphs to a folder
+    if save_figs:
+        filename = "%s/%04d.%s" % (output_folder, i, output_format)
+        fig.savefig(filename, format=output_format)
+
+    # Display the graph
+    if display_figs:
+        plt.show(block=True)
+
+    # Clear the graph
+    plt.close(fig)
 
 def test_real(n_epochs=1000):
     """ Test RNN with real-valued outputs. """
-    n_hidden = 10
-    n_in = 5
-    n_out = 3
-    n_steps = 10
-    n_seq = 10  # per batch
-    n_batches = 10
+    train, valid, test = process_data.load_data()
+    tseq, ttargets = train
+    vseq, vtargets = valid
+    test_seq, test_targets = test
+    length = len(tseq)
 
-    np.random.seed(0)
-    # simple lag test
-    seq = np.random.randn(n_steps, n_seq * n_batches, n_in)
-    targets = np.zeros((n_steps, n_seq * n_batches, n_out))
+    n_hidden = 6
+    n_in = 36
+    n_out = 12
+    n_steps = 1
+    n_batches = 100
+    n_seq = length / n_batches # per batch
 
-    targets[1:, :, 0] = seq[:-1, :, 3]  # delayed 1
-    targets[1:, :, 1] = seq[:-1, :, 2]  # delayed 1
-    targets[2:, :, 2] = seq[:-2, :, 0]  # delayed 2
-
-    targets += 0.01 * np.random.standard_normal(targets.shape)
+    seq = [[i] for i in tseq]
+    targets = [[i] for i in ttargets]
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
-                    learning_rate=0.01, learning_rate_decay=0.999,
+                    learning_rate=0.005, learning_rate_decay=0.995,
                     n_epochs=n_epochs, batch_size=n_seq, activation='tanh',
                     L2_reg=1e-3)
 
     model.fit(seq, targets, validate_every=100, optimizer='bfgs')
 
-    plt.close('all')
-    fig = plt.figure()
-    ax1 = plt.subplot(211)
-    plt.plot(seq[:, 0, :])
-    ax1.set_title('input')
-    ax2 = plt.subplot(212)
-    true_targets = plt.plot(targets[:, 0, :])
-
-    guess = model.predict(seq[:, 0, :][:, np.newaxis, :])
-
-    guessed_targets = plt.plot(guess.squeeze(), linestyle='--')
-    for i, x in enumerate(guessed_targets):
-        x.set_color(true_targets[i].get_color())
-    ax2.set_title('solid: true output, dashed: model output')
-
+    test_seq = [[i] for i in test_seq]
+    test_targets = [[i] for i in test_targets]
+    plt.close("all")
+    for idx in xrange(len(test_seq)):
+        guess = model.predict(test_seq[idx])
+        plot_predictions(test_seq[idx][0], test_targets[idx][0], guess[0])
 
 def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
     """ Test RNN with binary outputs. """
@@ -943,30 +906,31 @@ def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
         ax2.set_title('solid: true output, dashed: model output (prob)')
 
 
-def test_softmax(dataset, n_epochs=250, optimizer='cg'):
+def test_softmax(n_epochs=250, optimizer='cg'):
     """ Test RNN with softmax outputs. """
-    text, length = load_text(dataset)
     n_hidden = 10
     n_in = 5
     n_steps = 10
-    n_seq = 10 # per batch
-    n_batches = length / (n_in * n_steps * n_seq)
-    n_classes = unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
-    n_out = n_classes # restricted to single softmax per time step
+    n_seq = 10  # per batch
+    n_batches = 50
+    n_classes = 3
+    n_out = n_classes  # restricted to single softmax per time step
 
-    seq = np.asarray(make_sequence(text, n_steps, n_in))
-    targets = np.asarray(make_target(text, n_seq, n_steps))
+    np.random.seed(0)
+    # simple lag test
+    seq = np.random.randn(n_steps, n_seq * n_batches, n_in)
+    targets = np.zeros((n_steps, n_seq * n_batches), dtype=np.int)
 
-    # thresh = 0.5
-    # # if lag 1 (dim 3) is greater than lag 2 (dim 0) + thresh
-    # # class 1
-    # # if lag 1 (dim 3) is less than lag 2 (dim 0) - thresh
-    # # class 2
-    # # if lag 2(dim0) - thresh <= lag 1 (dim 3) <= lag2(dim0) + thresh
-    # # class 0
-    # targets[2:, :][seq[1:-1, :, 3] > seq[:-2, :, 0] + thresh] = 1
-    # targets[2:, :][seq[1:-1, :, 3] < seq[:-2, :, 0] - thresh] = 2
-    # #targets[:, 2:, 0] = np.cast[np.int](seq[:, 1:-1, 3] > seq[:, :-2, 0])
+    thresh = 0.5
+    # if lag 1 (dim 3) is greater than lag 2 (dim 0) + thresh
+    # class 1
+    # if lag 1 (dim 3) is less than lag 2 (dim 0) - thresh
+    # class 2
+    # if lag 2(dim0) - thresh <= lag 1 (dim 3) <= lag2(dim0) + thresh
+    # class 0
+    targets[2:, :][seq[1:-1, :, 3] > seq[:-2, :, 0] + thresh] = 1
+    targets[2:, :][seq[1:-1, :, 3] < seq[:-2, :, 0] - thresh] = 2
+    #targets[:, 2:, 0] = np.cast[np.int](seq[:, 1:-1, 3] > seq[:, :-2, 0])
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.005, learning_rate_decay=0.999,
@@ -977,6 +941,7 @@ def test_softmax(dataset, n_epochs=250, optimizer='cg'):
               optimizer=optimizer)
 
     seqs = xrange(10)
+
 
     plt.close('all')
     for seq_num in seqs:
@@ -1000,7 +965,7 @@ def test_softmax(dataset, n_epochs=250, optimizer='cg'):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    # test_real(n_epochs=1000)
+    test_real(n_epochs=50)
     #test_binary(optimizer='sgd', n_epochs=1000)
-    test_softmax(dataset="pride_and_prejudice.txt", n_epochs=2, optimizer='sgd')
+    # test_softmax(n_epochs=2, optimizer='sgd')
     print "Elapsed time: %f" % (time.time() - t0)

@@ -17,16 +17,14 @@ def test_real(n_updates=100):
     n_hidden = 10
     n_in = 5
     n_out = 3
-    n_steps = 1
+    n_steps = 2
     n_seq = 100
 
     np.random.seed(0)
     # simple lag test
     seq = np.random.randn(n_seq, n_steps, n_in)
-    print seq
 
     targets = np.zeros((n_seq, n_steps, n_out))
-    print targets
     # targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
     # targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
     # targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
