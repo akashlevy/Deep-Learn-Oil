@@ -3,11 +3,14 @@
 import nnet1d
 
 # Create model
-model = nnet1d.NNet1D(datafile="datasets/qri.pkl.gz", seed=42, batch_size=50,
+model = nnet1d.NNet1D(datafile="datasets/qri.pkl.gz", seed=42, batch_size=20,
                       learning_rate=0.01, momentum=0.99,
                       cost_fn=nnet1d.abs_error_cost)
 
 # Add layers and connect them
+model.add_fully_connected_layer(output_length=24, activ_fn=nnet1d.relu)
+model.add_fully_connected_layer(output_length=24, activ_fn=nnet1d.relu)
+model.add_fully_connected_layer(output_length=24, activ_fn=nnet1d.relu)
 model.add_fully_connected_layer(output_length=24, activ_fn=nnet1d.relu)
 model.add_fully_connected_layer()
 model.build()

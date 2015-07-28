@@ -58,7 +58,7 @@ class NNet1D(object):
         self.n_test_batches /= batch_size
 
     def add_conv_pool_layer(self, filters, filter_length, poolsize,
-                            activ_fn=relu, W_bound=0.0001):
+                            activ_fn=relu, W_bound=0.1):
         """Add a convolutional layer to the network"""        
         # If first layer, use x as input
         if len(self.layers) == 0:
@@ -91,7 +91,7 @@ class NNet1D(object):
         self.layers.append(layer)
 
     def add_fully_connected_layer(self, output_length=None, activ_fn=None,
-                                  W_bound=0):
+                                  W_bound=0.1):
         """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -124,7 +124,7 @@ class NNet1D(object):
         self.layers.append(layer)
 
     def add_recurrent_layer(self, output_length=None, activ_fn=None,
-                            W_bound=0):
+                            W_bound=0.1):
         """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -204,11 +204,16 @@ class NNet1D(object):
         
         # Shared variables for output
         x = T.matrix()
-        givens = {self.x: x}
         output = self.layers[-1].output
         
         # Make Theano output function
-        self.output = theano.function([x], output, givens=givens)
+        self.output = theano.function([x], output, givens={self.x: x})
+        
+        # Shared variables for error
+        x = T.matrix()
+        y = T.matrix()
+        givens = {self.x: x, self.y: y}
+        self.error = theano.function([x, y], self.cost, givens=givens)
 
     def gradient_updates_momentum(self, params):
         """Return the updates necessary to implement momentum"""
@@ -280,10 +285,8 @@ class NNet1D(object):
             plt.ylabel("Production", fontsize=15)
 
             # Make and display error label
-            mean_abs_error = abs_error_cost(chunk[1], chunk[2]).eval()
-            std_abs_error = T.std(T.abs_(chunk[1] - chunk[2])).eval()
-            error = (mean_abs_error, std_abs_error)
-            plt.title("Mean Abs Error: %f, Std: %f" % error, fontsize=10)
+            mean_cost = abs_error_cost(chunk[1], chunk[2]).eval()
+            plt.title("Mean Cost: %f" % mean_cost, fontsize=10)
 
             # Plot the predictions as a blue line with round markers
             prediction = np.append(chunk[0], chunk[2])
