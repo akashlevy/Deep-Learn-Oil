@@ -471,7 +471,7 @@ def test_real(n_epochs=20, validation_frequency=1000):
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.01, learning_rate_decay=0.99,
-                    n_epochs=n_epochs, activation='tanh')
+                    n_epochs=n_epochs, activation='relu')
 
     model.fit(seq, targets, validation_frequency=validation_frequency)
 

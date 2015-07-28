@@ -56,7 +56,7 @@ def plot_predictions(curr_seq, curr_targets, curr_guess, display_figs=True, save
     if display_figs:
         plt.show(block=True)
 
-    # Clear the graph
+    # # Clear the graph
     plt.close(fig)
 
 def test_real(n_updates=100):
@@ -82,7 +82,7 @@ def test_real(n_updates=100):
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
-                    n_epochs=400, activation='tanh')
+                    n_epochs=400, activation='relu')
 
     opt = hf_optimizer(p=model.rnn.params, inputs=[model.x, model.y],
                        s=model.rnn.y_pred,
