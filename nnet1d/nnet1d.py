@@ -12,12 +12,14 @@ import time
 from layers1d import ConvPoolLayer, FullyConnectedLayer, RecurrentLayer, Layer
 from nnet_fns import abs_error_cost, relu
 
+
 # Configure floating point numbers for Theano
 theano.config.floatX = "float32"
     
+
 class NNet1D(object):
     """A neural network implemented for 1D neural networks in Theano"""
-    def __init__(self, datafile, seed, batch_size, learning_rate, momentum,
+    def __init__(self, seed, datafile, batch_size, learning_rate, momentum,
                  cost_fn=abs_error_cost):
         """Initialize network: seed the random number generator, load the
         datasets, and store model parameters"""

@@ -69,6 +69,7 @@ def get_data():
     # Return data dictionary
     return data
 
+
 def preprocess_data(data):
     """Returns preprocessed version of the data"""
     # Initialize dataset components
@@ -115,7 +116,6 @@ def preprocess_data(data):
             # Add chunk
             if DIFFERENT_SITES:
                 # Assign to dataset based on site name
-<<<<<<< HEAD
                 if well_name[:4] in TRAIN_SITES:
                     train_x.append(chunk_x)
                     train_y.append(chunk_y)
@@ -123,15 +123,6 @@ def preprocess_data(data):
                     valid_x.append(chunk_x)
                     valid_y.append(chunk_y)
                 elif well_name[:4] in TEST_SITES:
-=======
-                if well_names[:4] in TRAIN_SITES:
-                    train_x.append(chunk_x)
-                    train_y.append(chunk_y)
-                elif well_names[:4] in VALID_SITES:
-                    valid_x.append(chunk_x)
-                    valid_y.append(chunk_y)
-                elif well_names[:4] in TEST_SITES:
->>>>>>> 2f07e0e1d0d18fef445ce1a9f90388cc0cfc103b
                     test_x.append(chunk_x)
                     test_y.append(chunk_y)
                 else:
@@ -149,7 +140,7 @@ def preprocess_data(data):
                     test_y.append(chunk_y)
             else:
                 print "Error: choose a dataset assignment option"
-                return
+
     # Make datasets
     train_set = (np.array(train_x), np.array(train_y))
     valid_set = (np.array(valid_x), np.array(valid_y))
@@ -160,6 +151,7 @@ def preprocess_data(data):
     print "Test Set Size: %d" % test_set[0].shape[0]
     
     return train_set, valid_set, test_set
+
 
 def plot_chunks(datasets):
     """Plots the datasets' chunks using pyplot"""
@@ -198,5 +190,5 @@ if __name__ == '__main__':
     with gzip.open("qri.pkl.gz", "wb") as file:
         file.write(cPickle.dumps(datasets))
     print "Done!"
-    # print "Plotting chunks..."
-    # plot_chunks(datasets)
+    print "Plotting chunks..."
+    plot_chunks(datasets)
