@@ -543,13 +543,13 @@ def test_softmax(dataset, n_epochs=250):
     text, length = process_text.load_text(dataset)
     n_hidden = 50
     n_in = 25
-    n_steps = 100
-    n_seq = length / (n_in * n_steps)
+    n_steps = 130
+    n_seq = length / n_steps
     n_classes = 130 #process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
     seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))
-    targets = np.asarray(process_text.make_target(text, n_seq, n_steps))
+    targets = np.asarray(process_text.make_target(text, n_seq, n_steps, n_out))
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.002, learning_rate_decay=0.97,

@@ -56,14 +56,16 @@ def plot_predictions(curr_seq, curr_targets, curr_guess, display_figs=True, save
     if display_figs:
         plt.show(block=True)
 
-    # Clear the graph
+    # # Clear the graph
     plt.close(fig)
 
 def test_real(n_updates=100):
     """ Test RNN with real-valued outputs. """
     train, valid, test = process_data.load_data()
-    seq, targets = train
-    length = len(seq)
+    tseq, ttargets = train
+    vseq, vtargets = valid
+    test_seq, test_targets = test
+    length = len(tseq)
 
     n_hidden = 6
     n_in = 36
@@ -71,8 +73,8 @@ def test_real(n_updates=100):
     n_steps = 1
     n_seq = length
 
-    seq = [[i] for i in seq]
-    targets = [[i] for i in targets]
+    seq = [[i] for i in tseq]
+    targets = [[i] for i in ttargets]
 
     gradient_dataset = SequenceDataset([seq, targets], batch_size=None, number_batches=100)
     cg_dataset = SequenceDataset([seq, targets], batch_size=None,
@@ -80,7 +82,7 @@ def test_real(n_updates=100):
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
-                    n_epochs=400, activation='tanh')
+                    n_epochs=400, activation='relu')
 
     opt = hf_optimizer(p=model.rnn.params, inputs=[model.x, model.y],
                        s=model.rnn.y_pred,
@@ -88,10 +90,12 @@ def test_real(n_updates=100):
 
     opt.train(gradient_dataset, cg_dataset, num_updates=n_updates)
 
+    test_seq = [[i] for i in test_seq]
+    test_targets = [[i] for i in test_targets]
     plt.close("all")
-    for idx in xrange(length):
-        guess = model.predict(seq[idx])
-        plot_predictions(seq[idx][0], targets[idx][0], guess[0])
+    for idx in xrange(len(test_seq)):
+        guess = model.predict(test_seq[idx])
+        plot_predictions(test_seq[idx][0], test_targets[idx][0], guess[0])
 
 def test_binary(multiple_out=False, n_updates=250):
     """ Test RNN with binary outputs. """
@@ -234,6 +238,6 @@ def test_softmax(n_updates=250):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    test_real(n_updates=20)
+    test_real(n_updates=200)
     #test_binary(multiple_out=True, n_updates=20)
     # test_softmax(n_updates=20)
