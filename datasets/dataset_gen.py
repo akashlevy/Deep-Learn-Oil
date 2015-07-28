@@ -12,9 +12,9 @@ import random as rnd
 DATA_DIRECTORY = "../data"
 
 # Splitting data
-IN_MONTHS = 36
+IN_MONTHS = 48
 OUT_MONTHS = 12
-STEP_MONTHS = 1
+STEP_MONTHS = 6
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
@@ -28,9 +28,9 @@ SEED = 42
 # Dataset assignment
 DIFFERENT_WELLS = True
 DIFFERENT_SITES = False
-TRAIN_SITES = ["BEAP", "BEAT", "BEDE", "BEZE", "EUAP"]
-VALID_SITES = ["EUAT"]
-TEST_SITES = ["EUZE"]
+TRAIN_SITES = ["BEAP", "BEAT", "BEZE", "EUZE", "EUAP"]
+VALID_SITES = ["BEDE"]
+TEST_SITES = ["EUAT"]
 
 def get_data():
     """Returns dictionary containing data from files in data directory"""
@@ -116,13 +116,13 @@ def preprocess_data(data):
             # Add chunk
             if DIFFERENT_SITES:
                 # Assign to dataset based on site name
-                if name[:4] in TRAIN_SITES:
+                if well_name[:4] in TRAIN_SITES:
                     train_x.append(chunk_x)
                     train_y.append(chunk_y)
-                elif name[:4] in VALID_SITES:
+                elif well_name[:4] in VALID_SITES:
                     valid_x.append(chunk_x)
                     valid_y.append(chunk_y)
-                elif name[:4] in TEST_SITES:
+                elif well_name[:4] in TEST_SITES:
                     test_x.append(chunk_x)
                     test_y.append(chunk_y)
                 else:
@@ -145,6 +145,10 @@ def preprocess_data(data):
     train_set = (np.array(train_x), np.array(train_y))
     valid_set = (np.array(valid_x), np.array(valid_y))
     test_set = (np.array(test_x), np.array(test_y))
+    
+    print "Training Set Size: %d" % train_set[0].shape[0]
+    print "Validation Set Size: %d" % valid_set[0].shape[0]
+    print "Test Set Size: %d" % test_set[0].shape[0]
     
     return train_set, valid_set, test_set
 
