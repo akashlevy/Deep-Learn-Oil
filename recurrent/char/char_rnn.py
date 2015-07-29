@@ -540,16 +540,33 @@ def test_binary(multiple_out=False, n_epochs=250):
 
 def test_softmax(dataset, n_epochs=250):
     """ Test RNN with softmax outputs. """
-    text, length = process_text.load_text(dataset)
-    n_hidden = 50
-    n_in = 25
-    n_steps = 130
-    n_seq = 250
-    n_classes = 130 #process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
-    n_out = n_classes # restricted to single softmax per time step
+    dataset = "shakespeare"
+    train, valid, test, unique_char = process_data.load_data(dataset)
+    tseq, ttargets = train
+    vseq, vtargets = valid
+    test_seq, test_targets = test
+    length = len(tseq)
 
-    seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))
-    targets = np.asarray(process_text.make_target(text, n_seq, n_steps, n_out))
+    n_hidden = 10
+    n_in = 48
+    n_out = 12
+    n_steps = 1
+    n_classes = unique_char
+    n_seq = length
+
+    seq = [[i] for i in tseq]
+    targets = [[i] for i in ttargets]
+
+    # text, length = process_text.load_text(dataset)
+    # n_hidden = 50
+    # n_in = 25
+    # n_steps = 130
+    # n_seq = 250
+    # n_classes = 130 # unique_char(text)
+    # n_out = 10 
+
+    # seq = np.asarray(process_text.make_sequence(text, n_steps, n_in))
+    # targets = np.asarray(process_text.make_target(text, n_seq, n_steps, n_out))
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.002, learning_rate_decay=0.97,
