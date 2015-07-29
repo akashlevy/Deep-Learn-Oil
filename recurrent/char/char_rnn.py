@@ -437,12 +437,12 @@ class MetaRNN(BaseEstimator):
                                         for i in xrange(n_test)]
                         this_test_loss = np.mean(test_losses)
 
-                        logger.info('epoch %i, seq %i/%i, tr loss %f '
+                        logger.info('epoch %i, seq %i/%i, tr loss %f, '
                                     'te loss %f lr: %f' % \
                         (epoch, idx + 1, n_train,
                          this_train_loss, this_test_loss, self.learning_rate))
                     else:
-                        logger.info('epoch %i, seq %i/%i, train loss %f '
+                        logger.info('epoch %i, seq %i/%i, train loss %f, '
                                     'lr: %f' % \
                                     (epoch, idx + 1, n_train, this_train_loss,
                                      self.learning_rate))
@@ -544,7 +544,7 @@ def test_softmax(dataset, n_epochs=250):
     n_hidden = 50
     n_in = 25
     n_steps = 130
-    n_seq = length / n_steps
+    n_seq = 250
     n_classes = 130 #process_text.unique_char(text) # alphanum, '.', ',', '?', '!', '\'', '"', ':', ';', ' ', '\n', '\t', '*'
     n_out = n_classes # restricted to single softmax per time step
 
@@ -558,9 +558,7 @@ def test_softmax(dataset, n_epochs=250):
 
     model.fit(seq, targets, validation_frequency=200)
 
-    seqs = xrange(10)
-    print "Prediction:"
-    for seq_num in seqs:
+    for seq_num in xrange(10):
         guess = model.predict(seq[seq_num])
         print "\b" + "".join([chr(n) for n in guess]),
 
@@ -569,5 +567,5 @@ if __name__ == "__main__":
     t0 = time.time()
     # test_real("pride_and_prejudice.txt")
     # test_binary(multiple_out=True, n_epochs=2400)
-    test_softmax("sherlock.txt", 5)
+    test_softmax("sherlock.txt", 1)
     print "\nElapsed time: %f" % (time.time() - t0)
