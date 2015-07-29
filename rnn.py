@@ -3,7 +3,7 @@
 import nnet1d
 
 # Create model
-model = nnet1d.NNet1D(datafile="datasets/qri.pkl.gz", seed=42, batch_size=20,
+model = nnet1d.nnet1d.NNet1D(datafile="datasets/qri.pkl.gz", seed=42, batch_size=20,
                       learning_rate=0.01, momentum=0.99,
                       cost_fn=nnet1d.abs_error_cost)
 
