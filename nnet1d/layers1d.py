@@ -150,22 +150,22 @@ class RecurrentLayer(Layer):
         self.W_in = theano.shared(value=np.asarray(weights, dtype=dtype))
 
         # Initial state of hidden layer
-        self.h0 = theano.shared(np.zeros((output_length,), dtype=dtype))
+        self.h = theano.shared(np.zeros((output_length,), dtype=dtype))
 
         # Bias of hidden layer
         self.b = theano.shared(np.zeros((output_length,), dtype=dtype))
 
         # Store output and params of this layer
-        self.params = [self.W, self.W_in, self.h0, self.b]
-
-        # Recurrent function
-        def step(x_t, h_tm1):
-            self.h_t = T.dot(x_t, self.W_in) + T.dot(h_tm1, self.W) + self.b
-            self.h_t = self.activ_fn(self.h_t)
-            return self.h_t
-
-        # Get output
-        self.output, _ = theano.scan(step, self.input, outputs_info=self.h0)
+        self.params = [self.W, self.W_in, self.b]
+        
+        # Recurrent step function
+        def step(x, h):
+            self.h = self.activ_fn(T.dot(self.h, self.W) +
+                                   T.dot(x, self.W_in) + self.b)
+            return self.h
+        
+        # Get hidden layer
+        self.output, _ = theano.scan(step, self.input, outputs_info=self.h)
     
     def __repr__(self):
         """Return string representation of FullyConnectedLayer"""
