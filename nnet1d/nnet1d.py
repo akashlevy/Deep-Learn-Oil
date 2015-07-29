@@ -9,8 +9,13 @@ import numpy as np
 import theano
 import theano.tensor as T
 import time
+import warnings
 from layers1d import ConvPoolLayer, FullyConnectedLayer, RecurrentLayer, Layer
 from nnet_fns import abs_error_cost, relu
+
+
+# Ignore warnings
+warnings.simplefilter("ignore")
 
 
 # Configure floating point numbers for Theano
@@ -49,16 +54,12 @@ class NNet1D(object):
         self.n_in = self.train_set_x.get_value(borrow=True).shape[1]
         self.n_out = self.train_set_y.get_value(borrow=True).shape[1]
         
-        # Determine number of batches for each dataset
+        # Determine number of batches for training dataset
         self.n_train_batches = self.train_set_x.get_value(borrow=True).shape[0]
         self.n_train_batches /= batch_size
-        self.n_valid_batches = self.valid_set_x.get_value(borrow=True).shape[0]
-        self.n_valid_batches /= batch_size
-        self.n_test_batches = self.test_set_x.get_value(borrow=True).shape[0]
-        self.n_test_batches /= batch_size
 
     def add_conv_pool_layer(self, filters, filter_length, poolsize,
-                            activ_fn=relu, W_bound=0.1):
+                            activ_fn=relu, W_bound=0.01):
         """Add a convolutional layer to the network"""        
         # If first layer, use x as input
         if len(self.layers) == 0:
@@ -67,13 +68,13 @@ class NNet1D(object):
             input_number = 1
             input_length = self.n_in
         
-        # If previous layer is convolutional, use its output as input
+        # If previous layer is convolutional, use output as input
         elif isinstance(self.layers[-1], ConvPoolLayer):
             input = self.layers[-1].output
             input_number = self.layers[-1].filter_shape[0]
             input_length = self.layers[-1].output_length
         
-        # If previous layer is fully connected, use its output as input
+        # If previous layer is fully connected/recurrent, use output as input
         elif isinstance(self.layers[-1], Layer):
             new_shape = (1, 1, 1, self.layers[-1].output_shape[0])
             input = self.layers[-1].output.reshape(new_shape)
@@ -91,7 +92,7 @@ class NNet1D(object):
         self.layers.append(layer)
 
     def add_fully_connected_layer(self, output_length=None, activ_fn=None,
-                                  W_bound=0.1):
+                                  W_bound=0.01):
         """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -102,13 +103,13 @@ class NNet1D(object):
             input = self.x
             input_length = self.n_in
         
-        # If previous layer is convolutional, use its flattened output as input
+        # If previous layer is convolutional, use flattened output as input
         elif isinstance(self.layers[-1], ConvPoolLayer):
             input = self.layers[-1].output.flatten(2)
             input_length = self.layers[-1].filter_shape[1]
             input_length *= self.layers[-1].output_length
         
-        # If previous layer is fully connected, use its output as input
+        # If previous layer is fully connected/recurrent, use output as input
         elif isinstance(self.layers[-1], Layer):
             input = self.layers[-1].output
             input_length = self.layers[-1].output_length
@@ -124,7 +125,7 @@ class NNet1D(object):
         self.layers.append(layer)
 
     def add_recurrent_layer(self, output_length=None, activ_fn=None,
-                            W_bound=0.1):
+                            W_bound=0.01):
         """Add a fully connected layer to the network"""        
         # If output_length is None, use self.n_out
         if output_length is None:
@@ -135,13 +136,13 @@ class NNet1D(object):
             input = self.x
             input_length = self.n_in
         
-        # If previous layer is convolutional, use its flattened output as input
+        # If previous layer is convolutional, use flattened output as input
         elif isinstance(self.layers[-1], ConvPoolLayer):
             input = self.layers[-1].output.flatten(2)
             input_length = self.layers[-1].filter_shape[1]
             input_length *= self.layers[-1].output_length
         
-        # If previous layer is fully connected, use its output as input
+        # If previous layer is fully connected/recurrent, use its output as input
         elif isinstance(self.layers[-1], Layer):
             input = self.layers[-1].output
             input_length = self.layers[-1].output_length
@@ -149,10 +150,10 @@ class NNet1D(object):
         # Otherwise raise error
         else:
             raise TypeError("Invalid previous layer")
-            
-        # Add the layer
-        layer = RecurrentLayer(self.rng, input, input_length, output_length,
-                               activ_fn, W_bound)
+        
+        # Add layer
+        layer = RecurrentLayer(self.rng, input, input_length,
+                               output_length, activ_fn, W_bound)
         self.layers.append(layer)
 
     def build(self):
@@ -182,38 +183,24 @@ class NNet1D(object):
         updates = self.gradient_updates_momentum(params)
         
         # Make Theano training function
-        self.train_batch = theano.function([i], self.cost, updates=updates,
-                                           givens=givens)
+        self.train_batch = theano.function([i], updates=updates, givens=givens)
         
-        # Make Theano training error function
-        self.train_error_batch = theano.function([i], self.cost, givens=givens)
-        
-        # Batching for validation set
-        givens = {self.x: self.valid_set_x[i*batch_size:(i+1)*batch_size],
-                  self.y: self.valid_set_y[i*batch_size:(i+1)*batch_size]}
-        
-        # Make Theano validation error function
-        self.valid_error_batch = theano.function([i], self.cost, givens=givens)
-        
-        # Batching for testing set
-        givens = {self.x: self.test_set_x[i*batch_size:(i+1)*batch_size],
-                  self.y: self.test_set_y[i*batch_size:(i+1)*batch_size]}
-        
-        # Make Theano testing error function
-        self.test_error_batch = theano.function([i], self.cost, givens=givens)
-        
-        # Shared variables for output
-        x = T.matrix()
-        output = self.layers[-1].output
-        
-        # Make Theano output function
-        self.output = theano.function([x], output, givens={self.x: x})
-        
-        # Shared variables for error
+        # Shared variables for output and error functions
         x = T.matrix()
         y = T.matrix()
+        output = self.layers[-1].output
+        
+        # Make Theano output and error functions
+        givens = {self.x: x}
+        self.output = theano.function([x], output, givens=givens)
         givens = {self.x: x, self.y: y}
         self.error = theano.function([x, y], self.cost, givens=givens)
+        givens = {self.x: self.train_set_x, self.y: self.train_set_y}
+        self.train_error = theano.function([], self.cost, givens=givens)
+        givens = {self.x: self.valid_set_x, self.y: self.valid_set_y}
+        self.valid_error = theano.function([], self.cost, givens=givens)
+        givens = {self.x: self.test_set_x, self.y: self.test_set_y}
+        self.test_error = theano.function([], self.cost, givens=givens)
 
     def gradient_updates_momentum(self, params):
         """Return the updates necessary to implement momentum"""
@@ -346,26 +333,20 @@ class NNet1D(object):
         with gzip.open(filename, "wb") as file:
             file.write(cPickle.dumps(self))
 
-    def test_error(self):
-        """Return average test error from the network"""
-        test_errors = [self.test_error_batch(i)
-                       for i in xrange(self.n_test_batches)]
-        return np.mean(test_errors)
-
     def train(self):
         """Apply one training step of the network and return average training
         and validation error"""
         self.epochs += 1
-        train_errors = [self.train_batch(i)
-                        for i in xrange(self.n_train_batches)]
-        mean_train_error = np.mean(train_errors)
+        for i in xrange(self.n_train_batches):
+            self.train_batch(i)
+        mean_train_error = self.train_error()
         mean_valid_error = self.valid_error()
         self.train_errors.append(mean_train_error)
         self.valid_errors.append(mean_valid_error)
         return mean_train_error, mean_valid_error
 
-    def train_early_stopping(self, patience=5, improve_thresh=0.00001,
-                             min_epochs=0, max_epochs=50000, print_error=True):
+    def train_early_stopping(self, patience=15, improve_thresh=0.00001,
+                             min_epochs=0, max_epochs=99999, print_error=True):
         """Train the model with early stopping based on validation error.
         Return the time elapsed"""
         # Start timer
@@ -406,15 +387,3 @@ class NNet1D(object):
             
         # Return time elapsed
         return end_time - start_time
-
-    def train_error(self):
-        """Return average train error from the network"""
-        train_errors = [self.train_error_batch(i)
-                        for i in xrange(self.n_train_batches)]
-        return np.mean(train_errors)
-    
-    def valid_error(self):
-        """Return average train error from the network"""
-        valid_errors = [self.valid_error_batch(i)
-                        for i in xrange(self.n_valid_batches)]
-        return np.mean(valid_errors)
