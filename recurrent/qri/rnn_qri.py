@@ -460,8 +460,8 @@ def test_real(n_epochs=20, validation_frequency=1000):
     test_seq, test_targets = test
     length = len(tseq)
 
-    n_hidden = 5
-    n_in = 36
+    n_hidden = 10
+    n_in = 48
     n_out = 12
     n_steps = 1
     n_seq = length

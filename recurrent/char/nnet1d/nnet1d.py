@@ -13,9 +13,6 @@ import time
 from layers1d import ConvPoolLayer, FullyConnectedLayer, RecurrentLayer, Layer
 from nnet_fns import abs_error_cost, relu
 
-# Configure floating point numbers for Theano
-theano.config.floatX = "float32"
-
 class NNet1D(object):
     """A neural network implemented for 1D neural networks in Theano"""
     def __init__(self, seed, datafile, batch_size, learning_rate, momentum,
@@ -100,12 +97,6 @@ class NNet1D(object):
         if len(self.layers) == 0:
             input = self.x
             input_length = self.n_in
-        
-        # If previous layer is convolutional, use its flattened output as input
-        elif isinstance(self.layers[-1], ConvPoolLayer):
-            input = self.layers[-1].output.flatten(2)
-            input_length = self.layers[-1].filter_shape[1]
-            input_length *= self.layers[-1].output_length
         
         # If previous layer is fully connected, use its output as input
         elif isinstance(self.layers[-1], Layer):
