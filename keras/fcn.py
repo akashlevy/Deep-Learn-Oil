@@ -31,6 +31,9 @@ callbacks = [early_stop, save_best]
 hist = model.fit(train_set[0], train_set[1], validation_data=valid_set,
                  verbose=2, callbacks=callbacks, nb_epoch=100, batch_size=20)
 
+# Load best model
+model.load_weights("fcn.mdl")
+
 # Print testing loss
 print
 print "Train set loss: %f" % model.test_on_batch(train_set[0], train_set[1])
