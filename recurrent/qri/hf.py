@@ -170,7 +170,7 @@ train :
   def train(self, gradient_dataset, cg_dataset, initial_lambda=0.1, mu=0.03,
             global_backtracking=False, preconditioner=False, max_cg_iterations=250,
             num_updates=100, validation=None, validation_frequency=1,
-            patience=20, save_progress=None):
+            patience=50, save_progress=None):
     '''Performs HF training.
   gradient_dataset : SequenceDataset-like object
       Defines batches used to compute the gradient.

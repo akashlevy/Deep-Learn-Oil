@@ -68,7 +68,7 @@ def test_real(n_updates=100):
     length = len(tseq)
 
     n_hidden = 6
-    n_in = 36
+    n_in = 48
     n_out = 12
     n_steps = 1
     n_seq = length
@@ -82,7 +82,7 @@ def test_real(n_updates=100):
 
     model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
                     learning_rate=0.001, learning_rate_decay=0.999,
-                    n_epochs=400, activation='relu')
+                    n_epochs=500, activation='relu')
 
     opt = hf_optimizer(p=model.rnn.params, inputs=[model.x, model.y],
                        s=model.rnn.y_pred,
@@ -238,6 +238,6 @@ def test_softmax(n_updates=250):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    test_real(n_updates=200)
+    test_real(n_updates=100)
     #test_binary(multiple_out=True, n_updates=20)
     # test_softmax(n_updates=20)
