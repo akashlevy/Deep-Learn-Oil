@@ -1,5 +1,5 @@
-"""Library for 1D neural networks using Theano: supports convolutional and
-fully connected layers"""
+"""Library for 1D neural networks using Theano: supports convolutional, fully
+connected, and recurrent layers"""
 
 import copy
 import cPickle
@@ -64,7 +64,7 @@ class NNet1D(object):
         # If first layer, use x as input
         if len(self.layers) == 0:
             new_shape = (self.batch_size, 1, 1, self.n_in)
-            input = self.x.dimshuffle(0, 'x', 'x', 1)
+            input = self.x.dimshuffle(0,'x','x',1)
             input_number = 1
             input_length = self.n_in
         
@@ -75,7 +75,7 @@ class NNet1D(object):
             input_length = self.layers[-1].output_length
         
         # If previous layer is fully connected/recurrent, use output as input
-        elif isinstance(self.layers[-1], Layer):
+        elif isinstance(self.layers[-1], FullyConnectedLayer):
             new_shape = (1, 1, 1, self.layers[-1].output_shape[0])
             input = self.layers[-1].output.reshape(new_shape)
             input_number = 1
@@ -110,7 +110,7 @@ class NNet1D(object):
             input_length *= self.layers[-1].output_length
         
         # If previous layer is fully connected/recurrent, use output as input
-        elif isinstance(self.layers[-1], Layer):
+        elif isinstance(self.layers[-1], FullyConnectedLayer):
             input = self.layers[-1].output
             input_length = self.layers[-1].output_length
         
@@ -143,7 +143,7 @@ class NNet1D(object):
             input_length *= self.layers[-1].output_length
         
         # If previous layer is fully connected/recurrent, use its output as input
-        elif isinstance(self.layers[-1], Layer):
+        elif isinstance(self.layers[-1], FullyConnectedLayer):
             input = self.layers[-1].output
             input_length = self.layers[-1].output_length
         
