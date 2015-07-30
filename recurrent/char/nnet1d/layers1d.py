@@ -69,7 +69,7 @@ class FullyConnectedLayer(Layer):
 
 class RecurrentLayer(Layer):
     """Recurrent layer of neural network"""
-    def __init__(self, rng, input, input_length, output_length, activ_fn=relu,
+    def __init__(self, rng, input, input_length, n_hidden, output_length, activ_fn=relu,
                  output_type='real', W_bound=0.01):
         """Initialize recurrent layer"""
         # Store layer parameters and output length
@@ -92,13 +92,13 @@ class RecurrentLayer(Layer):
         # Input to hidden layer weights
         weight_size = (input_length, output_length)
         weights = rng.uniform(low=-W_bound, high=W_bound, size=weight_size)
-        self.W_in = theano.shared(value=np.asarray(weights, dtype=dtype))
+        self.W_in = theano.shared(value=np.asarray(weights, dtype=theano.config.floatX))
 
         # Initial state of hidden layer
-        self.h0 = theano.shared(np.zeros((output_length,), dtype=dtype))
+        self.h0 = theano.shared(np.zeros((output_length,), dtype=theano.config.floatX))
 
         # Bias of hidden layer
-        self.b = theano.shared(np.zeros((output_length,), dtype=dtype))
+        self.b = theano.shared(np.zeros((output_length,), dtype=theano.config.floatX))
 
         # Store output and params of this layer
         self.params = [self.W, self.W_in, self.h0, self.b]
@@ -113,14 +113,14 @@ class RecurrentLayer(Layer):
         self.output, _ = theano.scan(step, self.input, outputs_info=self.h0)
     
     def __repr__(self):
-        """Return string representation of FullyConnectedLayer"""
+        """Return string representation of RecurrentLayer"""
         format_line = "RNNLayer(rng, input, %s, %s, activ_fn=%s, cost_fn=%s)"
         activ_fn_name = self.activ_fn.__name__ if self.activ_fn else "None"
         return format_line % (self.input_length, self.output_length,
                               activ_fn_name)
     
     def __str__(self):
-        """Return string representation of FullyConnectedLayer"""
+        """Return string representation of RecurrentLayer"""
         return self.__repr__()
         
     def plot_weights(self, cmap="gray"):
