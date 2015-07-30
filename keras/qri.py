@@ -4,6 +4,11 @@ import cPickle, gzip
 import matplotlib.pyplot as plt
 import numpy as np
 import theano
+import warnings
+
+
+# Ignore warnings
+warnings.simplefilter("ignore")
 
 
 def load_data(filename):
