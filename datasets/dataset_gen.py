@@ -107,7 +107,7 @@ def preprocess_data(data):
             chunk_y = oils[out_index:end_index]
             
             # Normalize chunk w/respect to x (skip if standard deviation is 0)
-            if NORMALIZE_DATA and np.std(chunk_x) != 0:
+            if NORMALIZE_DATA:
                 mean = np.mean(chunk_x)
                 std = np.std(chunk_x)
                 chunk_x = (chunk_x - mean)/std

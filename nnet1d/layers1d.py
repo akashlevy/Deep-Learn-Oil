@@ -9,6 +9,11 @@ from theano.tensor.nnet import conv
 from nnet_functions import relu, abs_error_cost
 
 
+# Configure floating points for Theano
+theano.config.floatX = "float32"
+dtype = theano.config.floatX
+
+
 class Layer(object):
     """Layer of a 1-D neural network"""
     def __init__(self, input, input_length, activ_fn):
@@ -16,6 +21,18 @@ class Layer(object):
         self.input = input
         self.input_length = input_length
         self.activ_fn = activ_fn
+    
+    @staticmethod
+    def shared_uniform(rng, size, W_bound=0.01):
+        """Initialize a matrix shared variable with uniformly distributed
+        elements"""
+        weights = rng.uniform(low=-W_bound, high=W_bound, size=size)
+        return theano.shared(np.asarray(weights, dtype=dtype), borrow=True)
+
+    @staticmethod
+    def shared_zeros(*shape):
+        """Initialize a vector shared variable with zero elements."""
+        return theano.shared(np.zeros(shape, dtype=dtype), borrow=True)
 
 
 class ConvPoolLayer(Layer):
@@ -31,14 +48,12 @@ class ConvPoolLayer(Layer):
         self.filter_shape = (filters, input_number, 1, filter_length)
         
         # Store input, input length, activation function, and poolsize
-        super(ConvPoolLayer,self).__init__(input, input_length, activ_fn)
+        Layer.__init__(self, input, input_length, activ_fn)
         self.poolsize = poolsize
         
         # Model parameters (weights and biases)
-        dtype = theano.config.floatX
-        filts = rng.uniform(low=-W_bound, high=W_bound, size=self.filter_shape)
-        self.W = theano.shared(np.asarray(filts, dtype=dtype), borrow=True)
-        self.b = theano.shared(np.zeros(filters, dtype=dtype), borrow=True)
+        self.W = Layer.shared_uniform(rng, self.filter_shape, W_bound)
+        self.b = Layer.shared_zeros(filters)
 
         # Convolve input feature maps with filters
         conv_out = conv.conv2d(self.input, self.W, None, self.filter_shape)
@@ -70,7 +85,6 @@ class ConvPoolLayer(Layer):
         filters = self.W.get_value(borrow=True)
         new_shape = (-1, filters.shape[3])
         filters = np.resize(filters, new_shape)
-        print filters
         fig = plt.figure(1)
         graph = fig.add_subplot(111)
         mat = graph.matshow(filters, cmap=cmap, interpolation="none")
@@ -84,17 +98,14 @@ class FullyConnectedLayer(Layer):
                  cost_fn=abs_error_cost, W_bound=0.01):
         """Initialize fully connected layer"""
         # Store layer parameters, cost function, output length
-        super(FullyConnectedLayer,self).__init__(input, input_length, activ_fn)
+        Layer.__init__(self, input, input_length, activ_fn)
         self.cost_fn = cost_fn
         self.output_length = output_length
         
         # Model parameters (weights and biases)'
-        weight_size = (input_length, output_length)
-        bias_size = (output_length,)
-        weights = rng.uniform(low=-W_bound, high=W_bound, size=weight_size)
-        dtype = theano.config.floatX
-        self.W = theano.shared(np.asarray(weights, dtype=dtype), borrow=True)
-        self.b = theano.shared(np.zeros(bias_size, dtype=dtype), borrow=True)
+        self.W = Layer.shared_uniform(rng, (input_length, output_length),
+                                      W_bound)
+        self.b = Layer.shared_zeros(output_length)
         
         # Store output and params of this layer
         self.output = T.dot(input, self.W) + self.b
@@ -129,67 +140,47 @@ class FullyConnectedLayer(Layer):
         plt.show()
 
 
-class RecurrentLayer(Layer):
+class RecurrentLayer(FullyConnectedLayer):
     """Recurrent layer of neural network"""
     def __init__(self, rng, input, input_length, output_length, activ_fn=relu,
                  W_bound=0.01):
         """Initialize recurrent layer"""
-        # Store layer parameters and output length
-        super(RecurrentLayer, self).__init__(input, input_length, activ_fn)
-        self.output_length = output_length
+        # Treat as fully connected layer
+        FullyConnectedLayer.__init__(self, rng, input, input_length,
+                                     output_length, activ_fn)
 
-        # Recurrent weights
-        weight_size = (output_length, output_length)
-        weights = rng.uniform(low=-W_bound, high=W_bound, size=weight_size)
-        dtype = theano.config.floatX
-        self.W = theano.shared(value=np.asarray(weights, dtype=dtype))
-        
-        # Input to hidden layer weights
-        weight_size = (input_length, output_length)
-        weights = rng.uniform(low=-W_bound, high=W_bound, size=weight_size)
-        self.W_in = theano.shared(value=np.asarray(weights, dtype=dtype))
+        # Recurrent weights and stored hidden state
+        self.W_r = Layer.shared_uniform(rng, (output_length, output_length),
+                                        W_bound)
+        self.h = Layer.shared_zeros(output_length)
 
-        # Initial state of hidden layer
-        self.h = theano.shared(np.zeros((output_length,), dtype=dtype))
-
-        # Bias of hidden layer
-        self.b = theano.shared(np.zeros((output_length,), dtype=dtype))
-
-        # Store output and params of this layer
-        self.params = [self.W, self.W_in, self.b]
+        # Store params of this layer
+        self.params = [self.W, self.W_r, self.b]
         
         # Recurrent step function
-        def step(x, h):
-            self.h = self.activ_fn(T.dot(self.h, self.W) +
-                                   T.dot(x, self.W_in) + self.b)
+        def step(x):
+            self.h = T.dot(self.h, self.W_r) + T.dot(x, self.W) + self.b
+            self.h = self.activ_fn(self.h)
             return self.h
         
-        # Get hidden layer
-        self.output, _ = theano.scan(step, self.input, outputs_info=self.h)
+        # Compute hidden layer as output
+        self.output, _ = theano.scan(step, self.input)
     
     def __repr__(self):
-        """Return string representation of FullyConnectedLayer"""
-        format_line = "RNNLayer(rng, input, %s, %s, activ_fn=%s, cost_fn=%s)"
+        """Return string representation of RecurrentLayer"""
+        format_line = "RecurrentLayer(rng, input, %s, %s, activ_fn=%s, "
+        format_line += "cost_fn=%s)"
         activ_fn_name = self.activ_fn.__name__ if self.activ_fn else "None"
         return format_line % (self.input_length, self.output_length,
                               activ_fn_name)
     
     def __str__(self):
-        """Return string representation of FullyConnectedLayer"""
+        """Return string representation of RecurrentLayer"""
         return self.__repr__()
         
-    def plot_weights(self, cmap="gray"):
-        """Plot the weight matrix"""
-        weights = self.W_in.get_value(borrow=True)
-        fig = plt.figure(1)
-        graph = fig.add_subplot(111)
-        mat = graph.matshow(weights, cmap=cmap, interpolation="none")
-        fig.colorbar(mat)
-        plt.show()
-        
     def plot_recurrent_weights(self, cmap="gray"):
-        """Plot the rweight matrix"""
-        weights = self.W.get_value(borrow=True)
+        """Plot the recurrent weight matrix"""
+        weights = self.W_r.get_value(borrow=True)
         fig = plt.figure(1)
         graph = fig.add_subplot(111)
         mat = graph.matshow(weights, cmap=cmap, interpolation="none")
