@@ -8,10 +8,8 @@ model = NNet1D(datafile="datasets/qri.pkl.gz", seed=42, batch_size=20,
 
 # Add layers and connect them
 model.add_fully_connected_layer(output_length=30, activ_fn=relu)
-model.add_fully_connected_layer(output_length=30, activ_fn=relu)
 model.add_fully_connected_layer()
 model.build()
-model.print_output_graph("out")
 
 # Train until validation error does not improve
 model.train_early_stopping()
