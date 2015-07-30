@@ -1,0 +1,24 @@
+# Preprocessing parameters
+remove_zeros = True
+smooth_data = False
+normalize_data = True
+smooth_len = 3
+
+# Model parameters
+seed = 42
+batch_size = 25
+learning_rate = 0.01
+momentum = 0.5
+cost_function = abs_error/sqr_error
+activation_function = relu/tanh
+
+###############################################################################
+# Create model: DO NOT MODIFY 
+###############################################################################
+data = load_data(seed, remove_zeros, smooth_data, normalize_data, smooth_len)
+model = NNet1D(data, seed, batch_size, learning_rate, momentum, cost_function,
+               activation_function)
+###############################################################################
+
+# Add layers to model
+model.add_fully_connected_layer()
