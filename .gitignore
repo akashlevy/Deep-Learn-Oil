@@ -60,8 +60,9 @@ target/
 # Lock files
 .~lock*
 
-# Deep Learning Tutorials
+# Deep Learning Tutorials and keras
 ComputeFest2015_DeepLearning/
+keras/keras
 
 # Mac DS Store
 .DS_Store
