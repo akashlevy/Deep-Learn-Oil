@@ -62,7 +62,7 @@ target/
 
 # Deep Learning Tutorials and keras
 ComputeFest2015_DeepLearning/
-keras/keras
+keras/keras/
 
 # Mac DS Store
 .DS_Store
