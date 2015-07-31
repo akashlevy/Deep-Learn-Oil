@@ -1,0 +1,46 @@
+Things to optimize:
+- Time consumed
+- Accuracy
+
+Things to adjust:
+- Layer types: Dense, Convolution1D, Convolution1D+Maxpool1D, SimpleRNN, SimpleDeepRNN, LSTM, GRU, JZS1, JZS2, JZS3
+- (2) Activation functions: tanh, relu (do simple tests to see which is better)
+- (504) Batch size (increase by 10, up to 5040)
+- (10) Dropout between layers (increment by 0.1 from 0 to 0.9)
+FCN BELOW
+- (5) Number of hidden layers (0, 1, 2, 3, or 4)
+- (100) Thickness (increase in intervals of 10 up to to 1000)
+CONV BELOW
+- (3) Number of hidden layers (1, 2, 3)
+- (10) Filters (increase in intervals of 5 up to 50)
+- (12) Kernels (increase in intervals of 2 up to 24)
+
+
+Things to use but probably not to adjust:
+- Loss functions: MSE, MAE, RMSE, RMAE, RMSLE, RMALE (use MAE clipped)
+- Optimization techniques: SGD, Adagrad, Adadelta, RMSProp, Adam (use SGD)
+- Nesterov momentum (use it)
+- Learning rate (use 0.001)
+- Learning rate decay rate (use 1e-6)
+
+
+Last hope:
+- L1 regularization
+- L2 regularization
+
+
+Questions:
+- Add repeat?
+
+
+To do:
+- 
+
+Diagnostics of optimizations:
+- SGD 0.01: 0.859826
+- SGD 0.001 n-momentum: 0.848879
+- Adagrad 0.01: 0.848024
+- Adagrad 0.001: 0.859436
+- Adadelta: 0.859490
+- RMSprop: 0.849506
+Adam: 0.848062
