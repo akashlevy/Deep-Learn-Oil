@@ -1,34 +1,42 @@
 """ Test Long Short-Term Memory model with Keras library """
+import numpy as np
 import qri
 import random
 
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.layers.core import Activation, Dense, Dropout, Reshape
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
+from keras.models import Sequential
 from keras.optimizers import SGD
 
 # Seed random number generator
 random.seed(42)
 
+# Set up input, output, and hidden layer sizes
+n_in = 48
+n_out = 12
+n_hidden = 100
+
 # Load QRI data
-train_set, valid_set, test_set = qri.load_data("../datasets/qri.pkl.gz")
+train_set, valid_set, test_set = qri.load_data_recurrent("../datasets/qri.pkl.gz")
 
 # Build neural network
 model = Sequential()
-model.add(Embedding(input_dim=48, output_dim=100))
-model.add(LSTM(input_dim=48, output_dim=30, init='uniform',
-               activation='relu', inner_activation='sigmoid', return_sequences=True))
-model.add(Dropout(0.5))
-model.add(LSTM(input_dim=30, output_dim=30, init='uniform',
-               activation='relu', inner_activation='sigmoid', return_sequences=False))
-model.add(Dropout(0.5))
-model.add(Dense(input_dim=30, output_dim=12))
-model.add(Activation('relu'))
+# model.add(Embedding(input_dim=n_in, output_dim=n_in))
+# model.add(Reshape(1, 12))
+model.add(LSTM(input_dim=n_in, output_dim=n_hidden, init='uniform',
+               activation='relu', return_sequences=False))
+# model.add(Dropout(0.5))
+# model.add(LSTM(input_dim=n_hidden, output_dim=n_hidden, init='uniform',
+#                activation='relu', inner_activation='sigmoid', return_sequences=False))
+# model.add(Dropout(0.5))
+model.add(Dense(input_dim=n_hidden, output_dim=n_out))
+model.add(Activation('linear'))
 
 # Use sgd
 sgd = SGD(lr=0.01, momentum=0.99)
-model.compile(loss='mae', optimizer='sgd')
+model.compile(loss='msle', optimizer='rmsprop')
 
 # Early stopping and saving are callbacks
 save_best = ModelCheckpoint("lstm.mdl", save_best_only=True)
@@ -38,9 +46,6 @@ callbacks = [early_stop, save_best]
 # Train model
 hist = model.fit(train_set[0], train_set[1], validation_data=valid_set, nb_epoch=100,
                  callbacks=callbacks, batch_size=20, verbose=2, show_accuracy=True)
-
-# Test model
-score = model.evaluate(test_set[0], test_set[1], batch_size=20)
 
 # Print testing loss
 print "\nTrain set loss: %f" % model.test_on_batch(train_set[0], train_set[1])

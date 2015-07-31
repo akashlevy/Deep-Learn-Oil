@@ -11,6 +11,26 @@ def load_data(filename):
     with gzip.open(filename, "rb") as file:
         return cPickle.load(file)
 
+def load_data_recurrent(filename, timesteps=1):
+    """ Load datasets into 3D arrays from a file """
+    def make3d(data):
+        seq = []
+        for i in xrange(0, len(data), timesteps):
+            seq.append([data[i]])
+        return seq
+
+    train_set, valid_set, test_set = load_data(filename)
+
+    train_x = make3d(train_set[0])
+    valid_x = make3d(valid_set[0])
+    test_x = make3d(test_set[0])
+
+     # Make datasets
+    train_set = (np.array(train_x), train_set[1])
+    valid_set = (np.array(valid_x), valid_set[1])
+    test_set = (np.array(test_x), test_set[1])
+
+    return train_set, valid_set, test_set
 
 def plot_test_predictions(model, test_set, display_figs=True, save_figs=False,
                           output_folder="images", output_format="png"):
