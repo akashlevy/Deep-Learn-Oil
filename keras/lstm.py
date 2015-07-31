@@ -23,12 +23,12 @@ train_set, valid_set, test_set = datasets
 
 # Build neural network
 model = Sequential()
-model.add(LSTM(input_dim=48, output_dim=100))
-model.add(Dense(100, 12))
+model.add(LSTM(input_dim=48, output_dim=1000, return_sequences=False))
+model.add(Dense(input_dim=1000, output_dim=12))
 
 # Use stochastic gradient descent and compile model
 sgd = SGD(lr=0.001, momentum=0.99, decay=1e-6, nesterov=True)
-model.compile(loss=qri.mae_clip, optimizer="rmsprop")
+model.compile(loss=qri.mae_clip, optimizer=sgd)
 
 # Use early stopping and saving as callbacks
 early_stop = EarlyStopping(monitor='val_loss', patience=10)
