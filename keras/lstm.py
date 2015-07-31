@@ -1,51 +1,52 @@
 """ Test Long Short-Term Memory model with Keras library """
-import qri
-import random
 
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation
-from keras.layers.embeddings import Embedding
+import numpy as np
+import random
+import time
+import qri
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers.core import Activation, Dense, Dropout
 from keras.layers.recurrent import LSTM
+from keras.models import Sequential
 from keras.optimizers import SGD
 
+
 # Seed random number generator
-random.seed(42)
+np.random.seed(42)
 
 # Load QRI data
-train_set, valid_set, test_set = qri.load_data("../datasets/qri.pkl.gz")
+datasets = qri.load_data("../datasets/qri.pkl.gz")
+
+# Split into 3D datasets
+datasets = [(dataset[0][:,np.newaxis], dataset[1]) for dataset in datasets]
+train_set, valid_set, test_set = datasets
 
 # Build neural network
 model = Sequential()
-model.add(Embedding(input_dim=48, output_dim=100))
-model.add(LSTM(input_dim=48, output_dim=30, init='uniform',
-               activation='relu', inner_activation='sigmoid', return_sequences=True))
-model.add(Dropout(0.5))
-model.add(LSTM(input_dim=30, output_dim=30, init='uniform',
-               activation='relu', inner_activation='sigmoid', return_sequences=False))
-model.add(Dropout(0.5))
-model.add(Dense(input_dim=30, output_dim=12))
-model.add(Activation('relu'))
+model.add(LSTM(input_dim=48, output_dim=100))
+model.add(Dense(100, 12))
 
-# Use sgd
-sgd = SGD(lr=0.01, momentum=0.99)
-model.compile(loss='mae', optimizer='sgd')
+# Use stochastic gradient descent and compile model
+sgd = SGD(lr=0.001, momentum=0.99, decay=1e-6, nesterov=True)
+model.compile(loss=qri.mae_clip, optimizer="rmsprop")
 
-# Early stopping and saving are callbacks
-save_best = ModelCheckpoint("lstm.mdl", save_best_only=True)
-early_stop = EarlyStopping(monitor='val_loss', patience=5)
+# Use early stopping and saving as callbacks
+early_stop = EarlyStopping(monitor='val_loss', patience=10)
+save_best = ModelCheckpoint("models/lstm.mdl", save_best_only=True)
 callbacks = [early_stop, save_best]
 
 # Train model
-hist = model.fit(train_set[0], train_set[1], validation_data=valid_set, nb_epoch=100,
-                 callbacks=callbacks, batch_size=20, verbose=2, show_accuracy=True)
+t0 = time.time()
+hist = model.fit(train_set[0], train_set[1], validation_data=valid_set,
+                 verbose=2, callbacks=callbacks, nb_epoch=1000, batch_size=20)
+time_elapsed = time.time() - t0
 
-# Test model
-score = model.evaluate(test_set[0], test_set[1], batch_size=20)
+# Load best model
+model.load_weights("models/lstm.mdl")
 
-# Print testing loss
-print "\nTrain set loss: %f" % model.test_on_batch(train_set[0], train_set[1])
-print "Valid set loss: %f" % model.test_on_batch(valid_set[0], valid_set[1])
-print "Test set loss: %f" % model.test_on_batch(test_set[0], test_set[1])
+# Print time elapsed and loss on testing dataset
+print "\nTime elapsed: %f s" % time_elapsed
+print "Testing set loss: %f" % model.test_on_batch(test_set[0], test_set[1])
 
 # Plot training and validation loss
 qri.plot_train_valid_loss(hist)

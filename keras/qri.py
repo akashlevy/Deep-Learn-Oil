@@ -4,6 +4,7 @@ import cPickle, gzip
 import matplotlib.pyplot as plt
 import numpy as np
 import theano
+import theano.tensor as T
 import warnings
 
 
@@ -35,21 +36,19 @@ def plot_test_predictions(model, test_set, display_figs=True, save_figs=False,
         plt.ylabel("Production", fontsize=15)
 
         # Make and display error label
-        x2d = np.reshape(chunk[0], (1, 48))
-        y2d = np.reshape(chunk[1], (1, 12))
-        loss = model.test_on_batch(x2d, y2d)
+        loss = model.test_on_batch(chunk[0][np.newaxis], chunk[1][np.newaxis])
         plt.title("Loss: %f" % loss, fontsize=10)
 
         # Plot the predictions as a blue line with round markers
-        prediction = np.append(chunk[0], chunk[2])
+        prediction = np.append(chunk[0].flatten(), chunk[2])
         graph.plot(prediction, "b-o", label="Prediction")
 
         # Plot the future as a green line with round markers
-        future = np.append(chunk[0], chunk[1])
+        future = np.append(chunk[0].flatten(), chunk[1])
         graph.plot(future, "g-o", label="Future")
 
         # Plot the past as a red line with round markers
-        past = chunk[0]
+        past = chunk[0].flatten()
         graph.plot(past, "r-o", label="Past")
 
         # Add legend
@@ -93,3 +92,20 @@ def print_output_graph(model, format="svg", outfile="out"):
        specified format"""
     return theano.printing.pydotprint(model._predict, format=format,
                                       outfile=outfile)
+
+
+def plot_weights(layer, cmap="gray"):
+    """Plot the weight matrix"""
+    for param in layer.get_weights():
+        print param.shape
+        param = param.reshape(-1, layer.output_dim)
+        print param.shape
+        fig = plt.figure(1)
+        graph = fig.add_subplot(111)
+        mat = graph.matshow(param, cmap=cmap, interpolation="none")
+        fig.colorbar(mat)
+        plt.show()
+        
+def mae_clip(y_true, y_pred):
+    """Return the MAE with clipping to provide resistance to outliers"""
+    return T.clip(T.abs_(y_true - y_pred), 0, 6).mean(axis=-1)
