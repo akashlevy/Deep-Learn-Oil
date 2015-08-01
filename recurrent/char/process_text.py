@@ -1,19 +1,20 @@
 import cPickle
 import gzip
+import numpy as np
 import os
 
 # Shape of data
-N_SEQ = 
-N_STEPS = 3
 N_IN = 90
 N_OUT = 10
+N_STEPS = 25
+N_SEQ = 0
 
 # Proportion of text dedicated to dataset
 P_TRAIN = 0.8
 P_VALID = 0.1
 P_TEST = 0.1
 
-def load_data(dataset="shakespeare", max_size=250000):
+def load_data(dataset="shakespeare", max_size=10):
     """
     Loads a PlainText file into a string without '\n'.
     Returns the string and the length of the string.
@@ -32,13 +33,7 @@ def load_data(dataset="shakespeare", max_size=250000):
 
     if not os.path.exists(path):
         path = dataset + ".txt"
-        train_set, valid_set, test_set, unique_characters = process_data(path, max_size)
-    else:
-        f = gzip.open(path, "rb")
-        train_set, valid_set, test_set, unique_characters = cPickle.load(f)
-        f.close()
-
-    return train_set, valid_set, test_set, unique_characters
+        return process_data(path, max_size)
 
 def process_data(path, max_size):
     print "Processing data..."
@@ -66,35 +61,32 @@ def process_data(path, max_size):
         # Split data into x, y, and chunk
         in_idx = i
         out_idx = i + N_IN
-        end_idx = i + N_IN + N_OUT
-        chunk_x = oils[in_idx:out_idx]
-        chunk_y = oils[out_idx:end_idx]
+        end_idx = out_idx + N_OUT
+        data_x = make_sequence(text[in_idx:out_idx])
+        data_y = make_target(text[out_idx:end_idx])
 
         if i < TRAIN_LEN:
-            train_x.append(text[in_idx:out_idx])
-            train_y.append(text[out_idx:end_idx])
+            train_x.append(data_x)
+            train_y.append(data_y)
         elif i < VALID_LEN:
-            valid_x.append(text[in_idx:out_idx])
-            valid_y.append(text[out_idx:end_idx])
+            valid_x.append(data_x)
+            valid_y.append(data_y)
         else:
-            test_x.append(text[in_idx:out_idx])
-            test_y.append(text[out_idx:end_idx])
+            test_x.append(data_x)
+            test_y.append(data_y)
+
+    print np.array(train_x).shape
 
     # Make datasets
-    train_x = make_sequence(train_x)
-    train_y = make_target(train_y)
-    valid_x = make_sequence(valid_x)
-    valid_y = make_target(valid_y)
-    test_x = make_sequence(test_x)
-    test_y = make_target(test_y)
-
     train_set = (np.array(train_x), np.array(train_y))
     valid_set = (np.array(valid_x), np.array(valid_y))
     test_set = (np.array(test_x), np.array(test_y))
 
-    print "Training Set Size: %d" % train_set[0].shape[0]
-    print "Validation Set Size: %d" % valid_set[0].shape[0]
-    print "Test Set Size: %d" % test_set[0].shape[0]
+    N_SEQ = train_set[0].shape[0]
+
+    print "Training Set Shape: %s" % str(train_set[0].shape)
+    print "Validation Set Shape: %s" % str(valid_set[0].shape)
+    print "Test Set Shape: %s" % str(test_set[0].shape)
 
     return train_set, valid_set, test_set, unique_char(text)
 
@@ -119,19 +111,15 @@ def make_sequence(text):
     Turn individual characters into numbers using ord(c). This can be
     reversed by applying chr(ord(c)).
     """
-
-    # seq, first, second = [], [], []
-    # nsteps = 0
-    # for i in xrange(len(text)):
-    #     for idx in xrange(N_IN):
-    #         second.append(ord(text[i + idx]))
-    #     first.append(second)
-    #     nsteps += 1
-    #     second = []
-    #     if (nsteps >= N_STEPS):
-    #         arr.append(first)
-    #         first = []
-    #         nsteps = 0
+    seq, inner = [], []
+    # Create sequence
+    for i in xrange(0, len(text), N_STEPS):
+        for steps in xrange(N_STEPS):
+            in_idx = i + steps
+            out_idx = in_idx + N_IN
+            chunk = text[in_idx:out_idx]
+            inner.append([ord(c) for c in chunk])
+        seq.append(inner)
     return seq
 
 def make_target(text):
@@ -169,10 +157,10 @@ def unique_char(text):
 
 if __name__ == '__main__':
     textfile = "shakespeare"
+    path = textfile + ".pkl.gz"
     print "Loading data..."
     datasets = load_data(textfile, 25000)
     print "Writing datasets to %s.pkl.gz..." % textfile
-    path = textfile + ".pkl.gz"
     with gzip.open(path, "wb") as file:
         file.write(cPickle.dumps(datasets))
     print "Done!"
