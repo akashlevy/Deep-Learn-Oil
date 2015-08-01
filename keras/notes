@@ -34,7 +34,11 @@ Questions:
 
 
 To do:
-- 
+- Change activations of recurrent
+- Change headers of all models
+- Make post-processor
+- Make nice interface
+
 
 Diagnostics of optimizations:
 - SGD 0.01: 0.859826
@@ -43,4 +47,23 @@ Diagnostics of optimizations:
 - Adagrad 0.001: 0.859436
 - Adadelta: 0.859490
 - RMSprop: 0.849506
-Adam: 0.848062
+- Adam: 0.848062
+
+
+Ranking of different basic models:
+- GRU RELU (144.766418 s) *BEST*
+- JZS2 (197.463451 s)
+- JZS1 (267.760790 s)
+- GRU (284.616835 s)
+- LSTM (326.466802 s)
+- JZS2 RELU (109.027726 s)
+- JZS3 (137.224448 s)
+- Simple RNN RELU (51.507298 s)
+- JZS1 RELU (167.753578 s)
+- Simple Deep RNN RELU (106.117913 s)
+- Simple Deep RNN (401.925844 s)
+- JZS3 RELU (45.747421 s)
+- Simple RNN (95.576466 s)
+- Base (4.210158 s)
+- CNN (142.188696 s)
+- FCN (9.460658 s)
