@@ -19,7 +19,7 @@ STEP_MONTHS = 6
 # Preprocessing parameters
 REMOVE_ZEROS = True
 SMOOTH_DATA = False
-NORMALIZE_DATA = True
+NORMALIZE_DATA = False
 SMOOTH_LEN = 4
 
 # Random seed
