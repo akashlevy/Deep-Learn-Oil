@@ -55,7 +55,7 @@ print "Testing set loss: %f" % test_set_loss
 qri.save_results("results/%s.out" % MDL_NAME, time_elapsed, test_set_loss)
 qri.save_history("models/%s.hist" % MDL_NAME, hist.history)
 
-# Plot training and validation loss
+# Plot training and validation losses
 qri.plot_train_valid_loss(hist.history)
 
 # Make predictions
