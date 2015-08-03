@@ -87,7 +87,7 @@ def plot_test_predictions(model, test_set, display_figs=True, save_figs=False,
         plt.close(fig)
 
 
-def plot_train_valid_loss(hist):
+def plot_train_valid_loss(history):
     """Plot the training and validation error as a function of epochs"""
     # Create a figure and add a subplot with labels
     fig = plt.figure()
@@ -97,10 +97,10 @@ def plot_train_valid_loss(hist):
     plt.ylabel("Loss", fontsize=15)
     
     # Plot the training error
-    graph.plot(hist.history["loss"], label="Training Set")
+    graph.plot(history["loss"], label="Training Set")
     
     # Plot the validation error
-    graph.plot(hist.history["val_loss"], label="Validation Set")
+    graph.plot(history["val_loss"], label="Validation Set")
     
     # Add legend and display plot
     plt.legend()
@@ -117,15 +117,28 @@ def print_output_graph(model, format="svg", outfile="out"):
 def plot_weights(layer, cmap="gray"):
     """Plot the weight matrix"""
     for param in layer.get_weights():
-        print param.shape
         param = param.reshape(-1, layer.output_dim)
-        print param.shape
         fig = plt.figure(1)
         graph = fig.add_subplot(111)
         mat = graph.matshow(param, cmap=cmap, interpolation="none")
         fig.colorbar(mat)
         plt.show()
-        
+
+
 def mae_clip(y_true, y_pred):
     """Return the MAE with clipping to provide resistance to outliers"""
-    return T.clip(T.abs_(y_true - y_pred), 0, 6).mean(axis=-1)
+    CLIP_VALUE = 6
+    return T.clip(T.abs_(y_true - y_pred), 0, CLIP_VALUE).mean(axis=-1)
+
+
+def save_results(filename, time_elapsed, test_set_loss):
+    """Save performance of model to a file"""
+    with open(filename, "w") as file:
+        file.write("Time elapsed: %f s\n" % time_elapsed)
+        file.write("Testing set loss: %f" % test_set_loss)
+
+
+def save_history(filename, history):
+    """Save history of model to a file"""
+    with gzip.open(filename, "wb") as file:
+        cPickle.dump(history, file)

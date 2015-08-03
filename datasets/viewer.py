@@ -45,8 +45,9 @@ for name in data:
 	fig = plt.figure(1)
 	graph = fig.add_subplot(111)
 	fig.suptitle(name, fontsize=25)
-	plt.xlabel("Date", fontsize=15)
-	plt.ylabel("Production", fontsize=15)
+	# plt.xlabel("Date", fontsize=15)
+	plt.xlabel("Index", fontsize=15) #INDEX!!!!!
+	plt.ylabel("Production (barrels)", fontsize=15)
 	
 	# Set the xtick locations to correspond to the dates every 12 months
 	graph.set_xticks(dates[0::12])
@@ -54,7 +55,7 @@ for name in data:
 	# Set the xtick labels to correspond to the dates every 12 months
 	date_labels = [num2date(date).strftime("%m/%y") for date in dates[0::12]]
 	graph.set_xticklabels(date_labels)
-
+	
 	# Remove zeroed data points
 	i = 0
 	while i < len(oils):
@@ -69,16 +70,8 @@ for name in data:
 	oils = np.array(oils)
 	
 	# Plot the raw data as a red line with round markers
-	graph.plot(dates, oils, "r-o", label="Oil Production")
-	
-	# Performs convolutional smoothing (BAD: ASSUMES POINTS ARE SPACED EVENLY)
-	WINDOW_LEN = 6
-	if len(oils) > WINDOW_LEN:
-		s = np.r_[oils[WINDOW_LEN/2:0:-1], oils, oils[-1:-WINDOW_LEN/2:-1]]
-		oils = np.convolve(np.ones(WINDOW_LEN)/WINDOW_LEN, s, mode="valid")
- 	
-	# Plot the smoothed data as a green line with round markers
-	graph.plot(dates, oils, "g-o", label="Smoothed Oil Production")
+	#graph.plot(dates, oils, "r-o", label="Oil Production")
+	graph.plot(oils, "r-o", label="Oil Production")
 	
 	# Add legend and display plot
 	plt.legend()
