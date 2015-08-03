@@ -34,7 +34,7 @@ sgd = SGD(lr=0.001, momentum=0.99, decay=1e-6, nesterov=True)
 model.compile(loss=qri.mae_clip, optimizer=sgd)
 
 # Use early stopping and saving as callbacks
-early_stop = EarlyStopping(monitor='val_loss', patience=20)
+early_stop = EarlyStopping(monitor='val_loss', patience=10)
 save_best = ModelCheckpoint("models/%s.mdl" % MDL_NAME, save_best_only=True)
 callbacks = [early_stop, save_best]
 
