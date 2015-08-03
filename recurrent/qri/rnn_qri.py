@@ -485,5 +485,5 @@ def test_real(n_epochs=20, validation_frequency=1000):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real(1, 5000)
+    test_real(20, 5000)
     print "Elapsed time: %f" % (time.time() - t0)

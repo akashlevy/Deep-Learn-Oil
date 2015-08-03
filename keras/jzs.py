@@ -5,8 +5,8 @@ import random
 import time
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers.core import Activation, Dense, Dropout
-from keras.layers.recurrent import LSTM
+from keras.layers.core import Activation, Dense, Dropout, Reshape, TimeDistributedDense
+from keras.layers.recurrent import JZS1, JZS2, JZS3
 from keras.models import Sequential
 from keras.optimizers import SGD
 
@@ -16,7 +16,7 @@ np.random.seed(42)
 # Set up input, output, and hidden layer sizes
 n_in = 48
 n_out = 12
-n_hidden = 100
+n_hidden = 1000
 
 # Load QRI data
 datasets = qri.load_data("../datasets/qri.pkl.gz")
@@ -27,8 +27,12 @@ train_set, valid_set, test_set = datasets
 
 # Build neural network
 model = Sequential()
-model.add(LSTM(input_dim=48, output_dim=1000, return_sequences=False))
-model.add(Dense(input_dim=1000, output_dim=12))
+model.add(JZS3(input_dim=n_in, output_dim=n_hidden, return_sequences=True))
+model.add(JZS3(input_dim=n_hidden, output_dim=n_hidden, return_sequences=True))
+model.add(JZS3(input_dim=n_hidden, output_dim=n_hidden, return_sequences=True))
+model.add(TimeDistributedDense(input_dim=n_hidden, output_dim=n_out))
+model.add(Reshape(n_out))
+# model.add(Dense(input_dim=n_hidden, output_dim=n_out))
 
 # Use stochastic gradient descent and compile model
 sgd = SGD(lr=0.001, momentum=0.99, decay=1e-6, nesterov=True)
