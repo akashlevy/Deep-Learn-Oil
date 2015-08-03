@@ -67,6 +67,9 @@ keras/keras/
 # Mac DS Store
 .DS_Store
 
+# Thumbnails on Windows
+Thumbs.db
+
 # Eclipse/PyDev Projects
 .project
 .pydevproject
