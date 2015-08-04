@@ -69,7 +69,11 @@ class FullyConnectedLayer(Layer):
 
 class RecurrentLayer(Layer):
     """Recurrent layer of neural network"""
+<<<<<<< HEAD
+    def __init__(self, rng, input, input_length, output_length, activ_fn=relu,
+=======
     def __init__(self, rng, input, input_length, n_hidden, output_length, activ_fn=relu,
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
                  output_type='real', W_bound=0.01):
         """Initialize recurrent layer"""
         # Store layer parameters and output length
