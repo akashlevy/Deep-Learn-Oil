@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """ Test Long Short-Term Memory model with Keras library """
 import numpy as np
 import qri
@@ -6,10 +7,24 @@ import time
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers.core import Activation, Dense, Dropout
+=======
+"""Test long short-term memory model with Keras library"""
+
+import numpy as np
+import random
+import time
+import qri
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers.core import Dense, Dropout
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
 from keras.optimizers import SGD
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 # Model name
 MDL_NAME = "lstm"
 
@@ -55,7 +70,11 @@ print "Testing set loss: %f" % test_set_loss
 qri.save_results("results/%s.out" % MDL_NAME, time_elapsed, test_set_loss)
 qri.save_history("models/%s.hist" % MDL_NAME, hist.history)
 
+<<<<<<< HEAD
 # Plot training and validation losses
+=======
+# Plot training and validation loss
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 qri.plot_train_valid_loss(hist.history)
 
 # Make predictions

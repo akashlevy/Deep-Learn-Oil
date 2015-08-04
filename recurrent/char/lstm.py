@@ -17,17 +17,26 @@ dataset = "shakespeare"
 n_in = 90
 n_out = 10
 n_steps = 1
+<<<<<<< HEAD
+=======
+n_classes = unique_char
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 n_seq = length
 
 # Load datasets
 path = dataset + ".pkl.gz"
+<<<<<<< HEAD
 train_set, valid_set, test_set, unique_char = char.load_data(path)
 n_classes = unique_char
+=======
+train_set, valid_set, test_set = char.load_data(path)
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 
 #Build neural network
 model = Sequential()
 model.add(Embedding(input_dim=n_in, output_dim=n_out)
 model.add(LSTM(input_dim=n_in, output_dim=n_hidden, activation='sigmoid',
+<<<<<<< HEAD
                inner_activation='hard_sigmoid', return_sequences=True))
 model.add(Dropout(0.5))
 model.add(LSTM(input_dim=n_hidden, output_dim=n_hidden, activation='sigmoid',
@@ -39,6 +48,13 @@ model.add(Dense(input_dim=n_hidden, output_dim=n_out))
 model.add(Activation('sigmoid'))
 
 # Compile using RMSprop
+=======
+               inner_activation='hard_sigmoid'))
+model.add(Dropout(0.5))
+model.add(Dense(128, 1))
+model.add(Activation('sigmoid'))
+
+>>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 model.compile(loss='binary_crossentropy', optimizer='rmsprop')
 
 model.fit(X_train, Y_train, batch_size=16, nb_epoch=10)
