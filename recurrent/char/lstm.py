@@ -2,10 +2,10 @@
 import numpy as np
 import char
 import random
+import time
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers.core import Activation, Dense, Dropout, Reshape
-from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
 from keras.optimizers import SGD
@@ -17,28 +17,20 @@ dataset = "shakespeare"
 n_in = 90
 n_out = 10
 n_steps = 1
-<<<<<<< HEAD
-=======
-n_classes = unique_char
->>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
-n_seq = length
+n_hidden = 200
 
 # Load datasets
 path = dataset + ".pkl.gz"
-<<<<<<< HEAD
-train_set, valid_set, test_set, unique_char = char.load_data(path)
-n_classes = unique_char
-=======
-train_set, valid_set, test_set = char.load_data(path)
->>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
+datasets = char.load_data(path)
+
+# Split into 3D datasets
+datasets = [(data[0][:,np.newaxis], data[1]) for data in datasets]
+train_set, valid_set, test_set = datasets
 
 #Build neural network
 model = Sequential()
-model.add(Embedding(input_dim=n_in, output_dim=n_out)
 model.add(LSTM(input_dim=n_in, output_dim=n_hidden, activation='sigmoid',
-<<<<<<< HEAD
                inner_activation='hard_sigmoid', return_sequences=True))
-model.add(Dropout(0.5))
 model.add(LSTM(input_dim=n_hidden, output_dim=n_hidden, activation='sigmoid',
                inner_activation='hard_sigmoid', return_sequences=True))
 model.add(Dropout(0.5))
@@ -48,14 +40,28 @@ model.add(Dense(input_dim=n_hidden, output_dim=n_out))
 model.add(Activation('sigmoid'))
 
 # Compile using RMSprop
-=======
-               inner_activation='hard_sigmoid'))
-model.add(Dropout(0.5))
-model.add(Dense(128, 1))
-model.add(Activation('sigmoid'))
-
->>>>>>> 4306f1d1ccc6df19126c08a79ff7ed01d302a7f4
 model.compile(loss='binary_crossentropy', optimizer='rmsprop')
 
-model.fit(X_train, Y_train, batch_size=16, nb_epoch=10)
-score = model.evaluate(X_test, Y_test, batch_size=16)
+# Use early stopping and saving as callbacks
+early_stop = EarlyStopping(monitor='val_loss', patience=5)
+save_best = ModelCheckpoint("models/%s.mdl" % dataset, save_best_only=True)
+callbacks = [early_stop, save_best]
+
+# Train model
+t0 = time.time()
+hist = model.fit(train_set[0], train_set[1], validation_data=valid_set,
+                 verbose=2, callbacks=callbacks, nb_epoch=5, batch_size=20)
+time_elapsed = time.time() - t0
+
+# Load best model
+model.load_weights("models/%s.mdl" % dataset)
+
+# Print time elapsed and loss on testing dataset
+print "\nTime elapsed: %f s" % time_elapsed
+print "Testing set loss: %f" % model.test_on_batch(test_set[0], test_set[1])
+
+# Plot training and validation loss
+# char.plot_train_valid_loss(hist)
+
+# Make predictions
+char.print_test_predictions(model, train_set)
