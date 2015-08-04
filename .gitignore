@@ -74,5 +74,5 @@ Thumbs.db
 .project
 .pydevproject
 
-# Large .mdl files
+# Large files
 keras/models/lstm.mdl
