@@ -73,3 +73,6 @@ Thumbs.db
 # Eclipse/PyDev Projects
 .project
 .pydevproject
+
+# Large .mdl files
+keras/models/lstm.mdl
