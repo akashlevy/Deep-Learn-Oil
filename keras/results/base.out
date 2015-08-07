@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 Time elapsed: 16.659000 s
 Testing set loss: 0.850009
+=======
+Time elapsed: 5.019959 s
+Testing set loss: 0.845515
+>>>>>>> a95c3e5fa982e8fef867557344e1b233dae9dc98

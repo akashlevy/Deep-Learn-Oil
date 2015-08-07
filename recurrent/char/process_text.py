@@ -6,7 +6,7 @@ import os
 # Shape of data
 N_IN = 90
 N_OUT = 10
-N_STEPS = 25
+N_STEPS = 1
 N_SEQ = 0
 
 # Proportion of text dedicated to dataset
@@ -14,7 +14,7 @@ P_TRAIN = 0.8
 P_VALID = 0.1
 P_TEST = 0.1
 
-def load_data(dataset="shakespeare", max_size=10):
+def load_data(dataset="shakespeare", max_size=None):
     """
     Loads a PlainText file into a string without '\n'.
     Returns the string and the length of the string.
@@ -46,6 +46,7 @@ def process_data(path, max_size):
     test_y = []
 
     text, length = load_text(path)
+    text = [ord(c) for c in text]
 
     # Truncate the length of text if max_size is specified
     if max_size is not None and max_size < length:
@@ -62,8 +63,8 @@ def process_data(path, max_size):
         in_idx = i
         out_idx = i + N_IN
         end_idx = out_idx + N_OUT
-        data_x = make_sequence(text[in_idx:out_idx])
-        data_y = make_target(text[out_idx:end_idx])
+        data_x = text[in_idx:out_idx]
+        data_y = text[out_idx:end_idx]
 
         if i < TRAIN_LEN:
             train_x.append(data_x)
@@ -88,7 +89,7 @@ def process_data(path, max_size):
     print "Validation Set Shape: %s" % str(valid_set[0].shape)
     print "Test Set Shape: %s" % str(test_set[0].shape)
 
-    return train_set, valid_set, test_set, unique_char(text)
+    return train_set, valid_set, test_set
 
 def load_text(dataset):
     """
@@ -136,12 +137,6 @@ def make_target(text):
             inner.append(ord(text[i + idx]))
         arr.append(inner)
         inner = []
-        # nsteps += 1
-        # if (nsteps >= N_STEPS):
-        #     arr.append(inner)
-        #     if (len(arr) >= N_SEQ):
-        #         break
-        #     nsteps = 0
     return targets
 
 def unique_char(text):
