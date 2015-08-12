@@ -6,6 +6,7 @@ import time
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers.core import Activation, Dense, Dropout, Reshape
+from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
 from keras.optimizers import SGD
@@ -24,16 +25,19 @@ path = dataset + ".pkl.gz"
 datasets = char.load_data(path)
 
 # Split into 3D datasets
+# train_set, valid_set, test_set, unique_char = datasets
+# train_set = (train_set[0][:,np.newaxis], train_set[1])
+# valid_set = (valid_set[0][:,np.newaxis], valid_set[1])
+# test_set = (test_set[0][:,np.newaxis], test_set[1])
 datasets = [(data[0][:,np.newaxis], data[1]) for data in datasets]
-train_set, valid_set, test_set = datasets
 
 #Build neural network
 model = Sequential()
+model.add(Embedding(unique_char, n_in))
 model.add(LSTM(input_dim=n_in, output_dim=n_hidden, activation='sigmoid',
                inner_activation='hard_sigmoid', return_sequences=True))
 model.add(LSTM(input_dim=n_hidden, output_dim=n_hidden, activation='sigmoid',
                inner_activation='hard_sigmoid', return_sequences=True))
-model.add(Dropout(0.5))
 model.add(LSTM(input_dim=n_hidden, output_dim=n_hidden, activation='sigmoid',
                inner_activation='hard_sigmoid', return_sequences=False))
 model.add(Dense(input_dim=n_hidden, output_dim=n_out))
@@ -59,9 +63,6 @@ model.load_weights("models/%s.mdl" % dataset)
 # Print time elapsed and loss on testing dataset
 print "\nTime elapsed: %f s" % time_elapsed
 print "Testing set loss: %f" % model.test_on_batch(test_set[0], test_set[1])
-
-# Plot training and validation loss
-# char.plot_train_valid_loss(hist)
 
 # Make predictions
 char.print_test_predictions(model, train_set)
