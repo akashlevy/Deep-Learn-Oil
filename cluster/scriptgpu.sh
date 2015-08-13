@@ -11,4 +11,4 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=YOUR EMAIL
 
-python fcn.py
+THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python fcn.py

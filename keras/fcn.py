@@ -2,6 +2,7 @@
 
 import numpy as np
 import random
+import sys
 import time
 import qri
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -9,6 +10,9 @@ from keras.layers.core import Activation, Dense, Dropout
 from keras.models import Sequential
 from keras.optimizers import SGD
 
+
+# Get batch size from command line argument
+bs = sys.argv[1]
 
 # Model name
 MDL_NAME = "base"
@@ -24,7 +28,9 @@ train_set, valid_set, test_set = datasets
 
 # Build neural network
 model = Sequential()
-model.add(Dense(48, 12))
+model.add(Dense(48, 100, activation="relu"))
+model.add(Dropout(0.5))
+model.add(Dense(100, 12))
 
 # Use stochastic gradient descent and compile model
 sgd = SGD(lr=0.001, momentum=0.99, decay=1e-6, nesterov=True)
@@ -38,7 +44,7 @@ callbacks = [early_stop, save_best]
 # Train model
 t0 = time.time()
 hist = model.fit(train_set[0], train_set[1], validation_data=valid_set,
-                 verbose=2, callbacks=callbacks, nb_epoch=1000, batch_size=20)
+                 verbose=2, callbacks=callbacks, nb_epoch=1000, batch_size=bs)
 time_elapsed = time.time() - t0
 
 # Load best model
