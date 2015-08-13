@@ -15,7 +15,7 @@ def load_data(filename):
     with gzip.open(filename, "rb") as file:
         return cPickle.load(file)
 
-def print_test_predictions(model, test_set, max_predictions=1, save_txt=False,
+def print_test_predictions(model, test_set, max_predictions=10, save_txt=False,
                           output_folder="text", output_format="txt"):
     """Plots the predictions for the first batch of the test set"""
     # Load test data and make prediction
@@ -32,9 +32,10 @@ def print_test_predictions(model, test_set, max_predictions=1, save_txt=False,
         print "loss: %f" % loss
 
         # Print predictions
-        prediction = chunk[2]
-        print prediction
-
+        print chunk[2]
+        for n in chunk[2]:
+            print ord(n)
+            
         # Print original
         future = chunk[1]
         print future
@@ -47,25 +48,6 @@ def print_test_predictions(model, test_set, max_predictions=1, save_txt=False,
         # Stop predicting
         if i >= max_predictions:
             return
-
-def plot_train_valid_loss(history):
-    """Plot the training and validation error as a function of epochs"""
-    # Create a figure and add a subplot with labels
-    fig = plt.figure()
-    graph = fig.add_subplot(111)
-    fig.suptitle("Loss vs. Training Steps", fontsize=25)
-    plt.xlabel("Epoch", fontsize=15)
-    plt.ylabel("Loss", fontsize=15)
-    
-    # Plot the training error
-    graph.plot(history["loss"], label="Training Set")
-    
-    # Plot the validation error
-    graph.plot(history["val_loss"], label="Validation Set")
-    
-    # Add legend and display plot
-    plt.legend()
-    plt.show()
 
 def print_output_graph(model, format="svg", outfile="out"):
     """Print computational graph for producing output to filename in
