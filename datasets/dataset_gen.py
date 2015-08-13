@@ -18,19 +18,10 @@ STEP_MONTHS = 6
 
 # Preprocessing parameters
 REMOVE_ZEROS = True
-SMOOTH_DATA = False
 NORMALIZE_DATA = True
-SMOOTH_LEN = 4
 
 # Random seed
 SEED = 42
-
-# Dataset assignment
-DIFFERENT_WELLS = True
-DIFFERENT_SITES = False
-TRAIN_SITES = ["BEAP", "BEAT", "BEZE", "EUZE", "EUAP"]
-VALID_SITES = ["BEDE"]
-TEST_SITES = ["EUAT"]
 
 def get_data():
     """Returns dictionary containing data from files in data directory"""
@@ -91,11 +82,6 @@ def preprocess_data(data):
             oils = np.array(filter(lambda oil: oil != 0, data[well_name]))
         else:
             oils = np.array(data[well_name])
-            
-        # Smooth data
-        if SMOOTH_DATA:
-            smooth_window = np.ones(SMOOTH_LEN)/SMOOTH_LEN
-            oils = np.convolve(smooth_window, oils, mode="valid")
         
         # Make chunks
         for i in xrange(0, len(oils)-(IN_MONTHS+OUT_MONTHS), STEP_MONTHS):
@@ -112,34 +98,17 @@ def preprocess_data(data):
                 std = np.std(chunk_x)
                 chunk_x = (chunk_x - mean)/std
                 chunk_y = (chunk_y - mean)/std
-            
-            # Add chunk
-            if DIFFERENT_SITES:
-                # Assign to dataset based on site name
-                if well_name[:4] in TRAIN_SITES:
-                    train_x.append(chunk_x)
-                    train_y.append(chunk_y)
-                elif well_name[:4] in VALID_SITES:
-                    valid_x.append(chunk_x)
-                    valid_y.append(chunk_y)
-                elif well_name[:4] in TEST_SITES:
-                    test_x.append(chunk_x)
-                    test_y.append(chunk_y)
-                else:
-                    print "Error: site %s not classified" % name
-            elif DIFFERENT_WELLS:
-                # Assign to dataset based on well index
-                if well_index < len(data)*6/8:
-                    train_x.append(chunk_x)
-                    train_y.append(chunk_y)
-                elif well_index < len(data)*7/8:
-                    valid_x.append(chunk_x)
-                    valid_y.append(chunk_y)
-                else:
-                    test_x.append(chunk_x)
-                    test_y.append(chunk_y)
+                
+            # Assign to dataset based on well index
+            if well_index < len(data)*6/8:
+                train_x.append(chunk_x)
+                train_y.append(chunk_y)
+            elif well_index < len(data)*7/8:
+                valid_x.append(chunk_x)
+                valid_y.append(chunk_y)
             else:
-                print "Error: choose a dataset assignment option"
+                test_x.append(chunk_x)
+                test_y.append(chunk_y)
 
     # Make datasets
     train_set = (np.array(train_x), np.array(train_y))

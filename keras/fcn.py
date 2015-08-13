@@ -24,10 +24,7 @@ train_set, valid_set, test_set = datasets
 
 # Build neural network
 model = Sequential()
-model.add(Dense(48, 100, activation="relu"))
-model.add(Dense(100, 200, activation="relu"))
-model.add(Dropout(0.5))
-model.add(Dense(200, 12))
+model.add(Dense(48, 12))
 
 # Use stochastic gradient descent and compile model
 sgd = SGD(lr=0.001, momentum=0.99, decay=1e-6, nesterov=True)
