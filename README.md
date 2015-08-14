@@ -36,4 +36,4 @@ After the model is done training, the best model is loaded from the MDL file. Th
 ##### Custom Neural Network Tools (`qri.py`)
 
 ## Contact
-Please contact <akashl@princeton.edu> with any questions about this repository.
+Please contact <akashl@princeton.edu> or <michelleyang@berkeley.edu> with any questions about this repository.
