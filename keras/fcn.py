@@ -10,10 +10,6 @@ from keras.layers.core import Activation, Dense, Dropout
 from keras.models import Sequential
 from keras.optimizers import SGD
 
-
-# Get batch size from command line argument
-bs = sys.argv[1]
-
 # Model name
 MDL_NAME = "base"
 
@@ -44,7 +40,7 @@ callbacks = [early_stop, save_best]
 # Train model
 t0 = time.time()
 hist = model.fit(train_set[0], train_set[1], validation_data=valid_set,
-                 verbose=2, callbacks=callbacks, nb_epoch=1000, batch_size=bs)
+                 verbose=2, callbacks=callbacks, nb_epoch=1000, batch_size=20)
 time_elapsed = time.time() - t0
 
 # Load best model
