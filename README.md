@@ -43,5 +43,10 @@ After the model is done training, the best model is loaded from the MDL file. Th
 
 #### Custom Neural Network Tools (`qri.py`)
 
+### Hyperparameter Optimization using Grid Search
+
+### Bayesian Hyperparameter Optimization
+For more information, see [Spearmint](https://github.com/JasperSnoek/spearmint).
+
 ## Contact
 Please contact <akashl@princeton.edu> or <michelleyang@berkeley.edu> with any questions about this repository.
