@@ -27,7 +27,15 @@ After importing the necessary libraries, a model name is specified through `MDL_
 
 Next, the early stopping parameters are specified. The validation loss is monitored and `patience` specifies how long the neural network should wait to observe a new best validation loss. The best model is saved to the subfolder `models/<MDL_NAME>.mdl`. These features are incorporated using a callback mechanism during training.
 
-The model is then trained. The lines ```python t0 = time.time()``` and ```time_elapsed = time.time() - t0``` are used to determine how long training took. There are three parameters to the training function `model.fit`; the first is `verbose` that specifies how often data should be printed to the console. The second is `nb_epoch` that specifies the maximum number of training steps. The last is `batch_size` that specifies the number of chunks that should be trained on at once.
+The model is then trained. The lines
+```python
+t0 = time.time()
+```
+and
+```python 
+time_elapsed = time.time() - t0
+```
+are used to determine how long training took. There are three parameters to the training function `model.fit`; the first is `verbose` that specifies how often data should be printed to the console. The second is `nb_epoch` that specifies the maximum number of training steps. The last is `batch_size` that specifies the number of chunks that should be trained on at once.
 
 After the model is done training, the best model is loaded from the MDL file. Then the model is evaluated on the testing set and the training time and testing set error are displayed. The results and the training/validation error are saved to `results/<MDL_NAME>.out` and `models/<MDL_NAME>.hist` respectively. Then the training and validation error are plotted as are the test predictions.
 
