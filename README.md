@@ -37,7 +37,7 @@ time_elapsed = time.time() - t0
 ```
 are used to determine how long training took. There are three parameters to the training function `model.fit`; the first is `verbose` that specifies how often data should be printed to the console. The second is `nb_epoch` that specifies the maximum number of training steps. The last is `batch_size` that specifies the number of chunks that should be trained on at once.
 
-After the model is done training, the best model is loaded from the MDL file. Then the model is evaluated on the testing set and the training time and testing set error are displayed. The results and the training/validation error are saved to `results/<MDL_NAME>.out` and `models/<MDL_NAME>.hist` respectively. Then the training and validation error are plotted as are the test predictions.
+After the model is done training, the best model is loaded from the MDL file. Then the model is evaluated on the testing set and the training time and testing set error are displayed. The results and the training/validation error are saved to `results/<MDL_NAME>.out` and `models/<MDL_NAME>.hist` respectively. Then the training and validation error are plotted as well as the test predictions.
 
 #### Model Specifics
 
