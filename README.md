@@ -41,12 +41,37 @@ After the model is done training, the best model is loaded from the MDL file. Th
 
 #### Model Specifics
 
-#### Custom Neural Network Tools (`qri.py`)
+Every model begins with 
+```python
+model = Sequential()
+```
+which denotes that the neural network consists of a series of stacked layers. There are many different kinds of layers:
+- **Dense**: a regular fully-connected layer; specify number of inputs, number of outputs, and activation function
+- **Convolution1D**: a convolutional layer; specify *stack size* (how many filters you used in the previous layer, 1 if first layer), number of kernels per filter, and activation function
+- **SimpleRNN, GRU, LSTM, MUT123**: different kinds of recurrent layers; specify number of inputs, number of outputs, and activation function
+- **SimpleDeepRNN**: a multi-layer recurrent network; specify number of inputs, number of outputs, number of layers, and activation function
+- **Dropout**: used to make a network more sparse; specify the fraction of inputs to randomly set to 0
+- **Flatten**: convert a multi-dimensional input into a 1D input.
+
+Using these Keras layers, we can construct custom neural networks to perform time series prediction on oil wells.
+
+#### Custom Neural Network Tools (found in `qri.py`)
+
+- `load_data`: loads the data from `qri.pkl.gz`
+- `plot_test_predictions`: plots each chunk from the test set along with the prediction made for that set
+- `plot_train_valid_loss`: plots how the training and validation error decreased in training
+- `print_output_graph`: prints the computational graph for producing predictions to filename in a specified image format; useful for debugging and seeing how the network actually works
+- `plot_weights`: plots the weight matrix for each layer in the neural network; useful for understanding what the neural network is learning
+- `mae_clip`: provides a Theano expression for the mean absolute error with clipping to provide resistance to outliers; the `CLIP_VALUE` can be changed to adjust the number of standard deviations at which to begin clipping
+- `save_results`: pickles the results and saves them to a file
+- `save_history`: saves the training and validation loss history to a file
 
 ### Hyperparameter Optimization using Grid Search
+
+We used variants of the scripts provided in `cluster` to run our models on Harvard's Odyssey computing cluster. They can be modified to work on different kinds of clusters.
 
 ### Bayesian Hyperparameter Optimization
 For more information, see [Spearmint](https://github.com/JasperSnoek/spearmint).
 
 ## Contact
-Please contact <akashl@princeton.edu> or <michelleyang@berkeley.edu> with any questions about this repository.
+Please contact <akashl@princeton.edu> or <michelleyang@berkeley.edu> with any questions about this repository. Thank you!
