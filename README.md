@@ -74,4 +74,4 @@ We used variants of the scripts provided in `cluster` to run our models on Harva
 For more information, see [Spearmint](https://github.com/JasperSnoek/spearmint).
 
 ## Contact
-Please contact <akashl@princeton.edu> or <michelleyang@berkeley.edu> with any questions about this repository. Thank you!
+Please contact <akashl@princeton.edu>, <janette_garcia08@hotmail.com>, <albert.tung0902@my.riohondo.edu> or <michelleyang@berkeley.edu> with any questions about this repository. Thank you!
