@@ -1,7 +1,7 @@
 # QRI Project at TRiCAM
 
-<img src="logos/iacs.png" alt="IACS Logo" height="100"/>
-<img src="logos/qri.png" alt="QRI Logo" height="100"/>
+<img src="logos/iacs.png" alt="IACS Logo" height="90"/>
+<img src="logos/qri.png" alt="QRI Logo" height="90"/>
 
 This repository contains the source files required to reproduce the results in "Applying Deep Learning to Petroleum Well Data." This README will explain how to use these files.
 
