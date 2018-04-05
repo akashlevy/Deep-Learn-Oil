@@ -72,5 +72,8 @@ We used variants of the scripts provided in `cluster` to run our models on Harva
 ### Bayesian Hyperparameter Optimization
 For more information, see [Spearmint](https://github.com/JasperSnoek/spearmint).
 
+## Cited By
+- Stamp, Alexander. "The relationship between weather forecasts and observations for predicting electricity output from wind turbines." (2017).
+
 ## Contact
 Please contact <akashl@princeton.edu>, <janette_garcia08@hotmail.com>, <albert.tung0902@my.riohondo.edu> or <michelleyang@berkeley.edu> with any questions about this repository. Thank you!
