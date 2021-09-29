@@ -1,4 +1,5 @@
-# QRI Project at TRiCAM
+# Applying Deep Learning to Petroleum Well Data
+## QRI Project at TRiCAM
 
 <img src="logos/iacs.png" alt="IACS Logo" height="100"/><img src="logos/qri.png" alt="QRI Logo" height="100"/>
 
