@@ -74,6 +74,10 @@ For more information, see [Spearmint](https://github.com/JasperSnoek/spearmint).
 
 ## Cited By
 - Stamp, Alexander. "The relationship between weather forecasts and observations for predicting electricity output from wind turbines." (2017).
+- Abdullayeva, Fargana, and Yadigar Imamverdiyev. "Development of oil production forecasting method based on Deep Learning." Statistics, Optimization & Information Computing 7, no. 4 (2019): 826-839.
+- Da Silva, Luciana Maria, Guilherme Daniel Avansi, and Denis José Schiozer. "Development of proxy models for petroleum reservoir simulation: a systematic literature review and state-of-the-art."
+
+Thanks to all our citers!
 
 ## Contact
 Please contact <akashlevy@gmail.com>, <janette_garcia08@hotmail.com>, <albert.tung0902@my.riohondo.edu> or <michelleyang@berkeley.edu> with any questions about this repository. Thank you!
